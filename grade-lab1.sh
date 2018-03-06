@@ -73,19 +73,8 @@ END { printf("\n") }' | grep '^00000000 00000000 00000001 00000002 00000003 0000
 		echo , Symbols WRONG "($syms)" $time
 	fi
 
-        if grep "Overflow success" jos.out >/dev/null
-        then
-                if grep "Backtrace success" jos.out >/dev/null
-                then
-                        score=`expr 10 + $score`
-                        echo OK $time
-                fi
-        else
-                echo WRONG $time
-        fi
 
-
-echo "Score: $score/90"
+echo "Score: $score/80"
 
 if [ $score -lt 60 ]; then
     exit 1
