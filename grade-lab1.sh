@@ -44,7 +44,7 @@ score=0
     fi
 
 	echo_n "Backtrace: "
-	args=`grep "eip f0100.* ebp f01.* args" jos.out | awk '{ print $6 }'`
+	args=`grep -a "eip f0100.* ebp f01.* args" jos.out | awk '{ print $6 }'`
 	cnt=`echo $args | grep '^00000000 00000000 00000001 00000002 00000003 00000004 00000005' | wc -w`
 	if [ $cnt -eq 8 ]
 	then
