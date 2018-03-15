@@ -28,43 +28,71 @@ static const char * const error_string[MAXERROR] =
 	[E_FAULT]	= "segmentation fault",
 };
 
+static void printnum(void (*putch)(int, void*), void *putdat,
+        unsigned long long num, unsigned base, int width, int padc,
+        int right_align, char force_sign_sym);
+
+static void printnum_digits(void (*putch)(int, void*), void *putdat,
+	 unsigned long long num, unsigned base, int width, int padc,
+     int right_align, char force_sign_sym, int *written);
 /*
  * Print a number (base <= 16) in reverse order,
  * using specified putch function and associated pointer putdat.
- * @putch: put char function
- * @num: number to put
- * @base: base number
- * @width: length of the total string(num)
- * @padc: character to fullfill extra width
  */
 static void
 printnum(void (*putch)(int, void*), void *putdat,
-	 unsigned long long num, unsigned base, int width, int padc)
+        unsigned long long num, unsigned base, int width, int padc,
+        int right_align, char force_sign_sym)
+{
+    int written = 0;
+    printnum_digits(putch, putdat, num, base, width, padc, right_align, force_sign_sym, &written);
+
+    width -= written;
+    if (right_align == 1) {
+        while (width -- > 0) {
+            putch(padc, putdat);
+        }
+    }
+}
+
+// print a number, include force sign if needed, left align characters
+static void
+printnum_digits(void (*putch)(int, void*), void *putdat,
+	 unsigned long long num, unsigned base, int width, int padc,
+     int right_align, char force_sign_sym, int *written
+     )
 {
 	// if cprintf'parameter includes pattern of the form "%-", padding
 	// space on the right side if neccesary.
 	// you can add helper function if needed.
 	// your code here:
-    int right_align = width > 0 ? 0 : 1;
 
 	// first recursively print all preceding (more significant) digits
 	if (num >= base) {
-		printnum(putch, putdat, num / base, base, width - 1, padc);
+		printnum_digits(putch, putdat, num / base, base, width - 1, padc, right_align, force_sign_sym, written);
 	} else {
 		// print any needed pad characters before first digit
         if (right_align == 0) {
-            while (--width > 0)
+            while (--width > 1) {
                 putch(padc, putdat);
+                (*written) ++;
+            }
+        }
+
+        if (force_sign_sym == '+') {
+            putch(force_sign_sym, putdat);
+            (*written) ++;
+        } else {
+            if (right_align == 0) {
+                putch(padc, putdat);
+                (*written) ++;
+            }
         }
 	}
 
 	// then print this (the least significant) digit
 	putch("0123456789abcdef"[num % base], putdat);
-    if (right_align == 1) {
-        while (--width > 0) {
-            putch(padc, putdat);
-        }
-    }
+    (*written) ++;
 }
 
 // Get an unsigned int of various possible sizes from a varargs list,
@@ -95,6 +123,7 @@ getint(va_list *ap, int lflag)
 
 
 // Main function to format and print a string.
+// @putdat count
 void printfmt(void (*putch)(int, void*), void *putdat, const char *fmt, ...);
 
 void
@@ -104,7 +133,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 	register int ch, err;
 	unsigned long long num;
 	int base, lflag, width, precision, altflag, right_align;
-	char padc;
+	char padc, force_sign_sym;
 
 	while (1) {
 		while ((ch = *(unsigned char *) fmt++) != '%') {
@@ -120,6 +149,8 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		lflag = 0;
 		altflag = 0;
         right_align = 0;
+        force_sign_sym = '0';
+
 	reswitch:
 		switch (ch = *(unsigned char *) fmt++) {
 
@@ -128,6 +159,10 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			padc = '-';
             right_align = 1;
 			goto reswitch;
+
+        case '+':
+            force_sign_sym = '+';
+            goto reswitch;
 
 		// flag to pad with 0's instead of spaces
 		case '0':
@@ -167,11 +202,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		process_precision:
 			if (width < 0) {
-                if (right_align == 0) {
-				    width = precision;
-                } else {
-                    width = -precision;
-                }
+				width = precision;
                 precision = -1;
             }
 			goto reswitch;
@@ -252,7 +283,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			num = getuint(&ap, lflag);
 			base = 16;
 		number:
-			printnum(putch, putdat, num, base, width, padc);
+			printnum(putch, putdat, num, base, width, padc, right_align, force_sign_sym);
 			break;
 
         case 'n': {
