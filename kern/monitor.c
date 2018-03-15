@@ -66,6 +66,17 @@ read_pretaddr() {
     return pretaddr;
 }
 
+static uint32_t read_ret_pointer(uint32_t ebp)
+{
+    uint32_t ret_pointer;
+    __asm __volatile(
+            "leal (%1), %0"
+            : "=r" (ret_pointer)
+            : "r" (ebp + 4)
+            );
+    return ret_pointer;
+}
+
 static uint32_t
 read_prev_ebp(uint32_t curr_ebp)
 {
@@ -97,8 +108,8 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
     cprintf("Stack backtrace:\n");
     uint32_t ebp = read_ebp();
     while (ebp != 0x0) {
-        cprintf("eip %x ebp %x args %x %x %x %x %x\n",
-                read_eip(), read_ebp(),
+        cprintf("eip %8x ebp %8x args %8x %8x %8x %8x %8x\n",
+                read_ret_pointer(ebp), ebp,
                 read_parameter(ebp, 8), read_parameter(ebp, 12), read_parameter(ebp, 16),
                 read_parameter(ebp, 20), read_parameter(ebp, 24)
                );
