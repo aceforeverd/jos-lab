@@ -83,7 +83,7 @@ printnum_digits(void (*putch)(int, void*), void *putdat,
             putch(force_sign_sym, putdat);
             (*written) ++;
         } else {
-            if (right_align == 0) {
+            if (right_align == 0 && width > 0) {
                 putch(padc, putdat);
                 (*written) ++;
             }
