@@ -314,7 +314,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
                 }
             } else {
                 int length = *(int*)putdat;
-                if (length >= 256) {
+                if (length >= 255) {
                     for (int i = 0; i < strlen(overflow_error); i++) {
                         putch(overflow_error[i], putdat);
                     }
