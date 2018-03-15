@@ -156,7 +156,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		// flag to pad on the right
 		case '-':
-			padc = '-';
+			padc = ' ';
             right_align = 1;
 			goto reswitch;
 
@@ -249,6 +249,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			num = getint(&ap, lflag);
 			if ((long long) num < 0) {
 				putch('-', putdat);
+                force_sign_sym = '-';
 				num = -(long long) num;
 			}
 			base = 10;
