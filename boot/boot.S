@@ -12,7 +12,7 @@
 .globl start
 start:
   .code16                     # Assemble for 16-bit mode
-  cli                         # Disable interrupts
+  cli                         # Disable interrupts, 0x7c00
   cld                         # String operations increment
 
   # Set up the important data segment registers (DS, ES, SS).

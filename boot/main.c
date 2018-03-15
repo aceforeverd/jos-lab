@@ -68,6 +68,7 @@ bad:
 
 // Read 'count' bytes at 'offset' from kernel into physical address 'pa'.
 // Might copy more than asked
+// pa: physical address
 void
 readseg(uint32_t pa, uint32_t count, uint32_t offset)
 {
