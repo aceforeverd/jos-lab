@@ -70,7 +70,7 @@ static uint32_t read_ret_pointer(uint32_t ebp)
 {
     uint32_t ret_pointer;
     __asm __volatile(
-            "leal (%1), %0"
+            "movl (%1), %0"
             : "=r" (ret_pointer)
             : "r" (ebp + 4)
             );
