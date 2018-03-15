@@ -307,7 +307,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
             const char *null_error = "\nerror! writing through NULL pointer! (%n argument)\n";
             const char *overflow_error = "\nwarning! The value %n argument pointed to has been overflowed!\n";
 
-            int *val = va_arg(ap, int *);
+            char *val = va_arg(ap, char *);
             if (!val) {
                 for (int i = 0; i < strlen(null_error); i++) {
                     putch(null_error[i], putdat);
@@ -319,7 +319,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
                         putch(overflow_error[i], putdat);
                     }
                 }
-                *val = length;
+                *val = (char)length;
             }
 
             break;
