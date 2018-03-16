@@ -25,6 +25,7 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
     { "backtrace", "Display the stack backtrace", mon_backtrace },
+    { "time", "Count the time (cpu cycles) of a command", mon_time },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -55,6 +56,52 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	cprintf("Kernel executable memory footprint: %dKB\n",
 		(end-entry+1023)/1024);
 	return 0;
+}
+
+int mon_time(int argc, char **argv, struct Trapframe *tf) {
+    if (argc <= 1) {
+        cprintf("No command to count\n");
+        cprintf("Usage:\n");
+        cprintf("\ttime [command] [command arguments ...]\n\n");
+        return -1;
+    }
+
+    char *cmd = argv[1];
+    int found = 0;
+    for (int i = 0; i < NCOMMANDS; i++) {
+        if (strcmp(cmd, commands[i].name) == 0) {
+            found = 1;
+            uint32_t start_time_high, start_time_low, end_time_low, end_time_high;
+            uint64_t start, end;
+            __asm __volatile (
+                    "rdtsc\n\t"
+                    "movl %%edx, %0\n\t"
+                    "movl %%eax, %1\n\t"
+                    : "=r" (start_time_high), "=r" (start_time_low)
+                    );
+
+            commands[i].func(argc - 1, argv + 1, tf);
+
+            __asm __volatile (
+                    "rdtsc\n\t"
+                    "movl %%edx, %0\n\t"
+                    "movl %%eax, %1\n\t"
+                    : "=r" (end_time_high), "=r" (end_time_low)
+                    );
+
+            start = ((uint64_t)start_time_high << 32) | start_time_low;
+            end = ((uint64_t)end_time_high << 32) | end_time_low;
+            cprintf("%s cycles: %l\n", cmd, end - start);
+            return 0;
+        }
+    }
+    if (found == 0) {
+        cprintf("command %s not found\n", cmd);
+        return -1;
+    }
+
+    cprintf("unexpected error\n");
+    return -1;
 }
 
 // Lab1 only
