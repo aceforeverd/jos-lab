@@ -93,7 +93,7 @@ int mon_time(int argc, char **argv, struct Trapframe *tf) {
 
             start = ((uint64_t)start_time_high << 32) | start_time_low;
             end = ((uint64_t)end_time_high << 32) | end_time_low;
-            cprintf("%s cycles: %l\n", cmd, end - start);
+            cprintf("%s cycles: %ld\n", cmd, end - start);
             return 0;
         }
     }
