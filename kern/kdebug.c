@@ -155,6 +155,7 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 		if (stabs[lfun].n_strx < stabstr_end - stabstr)
 			info->eip_fn_name = stabstr + stabs[lfun].n_strx;
 		info->eip_fn_addr = stabs[lfun].n_value;
+        // set the addr to the start of function
 		addr -= info->eip_fn_addr;
 		// Search within the function definition for the line number.
 		lline = lfun;
@@ -179,6 +180,10 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	//	Look at the STABS documentation and <inc/stab.h> to find
 	//	which one.
 	// Your code here.
+    stab_binsearch(stabs, &lline, &rline, S_SLINE, addr);
+    if (lline <= rline) {
+        info->eip_line = stabstr + stabs[lline].n_strx;
+    }
 
 	
 	// Search backwards from the line number for the relevant filename
