@@ -78,6 +78,7 @@ int mon_time(int argc, char **argv, struct Trapframe *tf) {
                     "movl %%edx, %0\n\t"
                     "movl %%eax, %1\n\t"
                     : "=r" (start_time_high), "=r" (start_time_low)
+                    : : "%eax", "%edx"
                     );
 
             commands[i].func(argc - 1, argv + 1, tf);
@@ -87,6 +88,7 @@ int mon_time(int argc, char **argv, struct Trapframe *tf) {
                     "movl %%edx, %0\n\t"
                     "movl %%eax, %1\n\t"
                     : "=r" (end_time_high), "=r" (end_time_low)
+                    : : "%eax", "%edx"
                     );
 
             start = ((uint64_t)start_time_high << 32) | start_time_low;
