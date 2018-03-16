@@ -180,9 +180,9 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	//	Look at the STABS documentation and <inc/stab.h> to find
 	//	which one.
 	// Your code here.
-    stab_binsearch(stabs, &lline, &rline, S_SLINE, addr);
+    stab_binsearch(stabs, &lline, &rline, N_SLINE, addr);
     if (lline <= rline) {
-        info->eip_line = stabstr + stabs[lline].n_strx;
+        info->eip_line = stabs[lline].n_value;
     }
 
 	
