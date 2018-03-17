@@ -2,9 +2,9 @@
 #define JOS_INC_MEMLAYOUT_H
 
 #ifndef __ASSEMBLER__
-#include <inc/types.h>
-#include <inc/queue.h>
 #include <inc/mmu.h>
+#include <inc/queue.h>
+#include <inc/types.h>
 #endif /* not __ASSEMBLER__ */
 
 /*
@@ -13,11 +13,11 @@
  */
 
 // Global descriptor numbers
-#define GD_KT     0x08     // kernel text
-#define GD_KD     0x10     // kernel data
-#define GD_UT     0x18     // user text
-#define GD_UD     0x20     // user data
-#define GD_TSS    0x28     // Task segment selector
+#define GD_KT 0x08   // kernel text
+#define GD_KD 0x10   // kernel data
+#define GD_UT 0x18   // user text
+#define GD_UD 0x20   // user data
+#define GD_TSS 0x28  // Task segment selector
 
 /*
  * Virtual memory map:                                Permissions
@@ -77,24 +77,23 @@
  *     at UTEMP.
  */
 
-
 // All physical memory mapped at this address
-#define	KERNBASE	0xF0000000
+#define KERNBASE 0xF0000000
 
 // At IOPHYSMEM (640K) there is a 384K hole for I/O.  From the kernel,
 // IOPHYSMEM can be addressed at KERNBASE + IOPHYSMEM.  The hole ends
 // at physical address EXTPHYSMEM.
-#define IOPHYSMEM	0x0A0000
-#define EXTPHYSMEM	0x100000
+#define IOPHYSMEM 0x0A0000
+#define EXTPHYSMEM 0x100000
 
 // Virtual page table.  Entry PDX[VPT] in the PD contains a pointer to
 // the page directory itself, thereby turning the PD into a page table,
 // which maps all the PTEs containing the page mappings for the entire
 // virtual address space into that 4 Meg region starting at VPT.
-#define VPT		(KERNBASE - PTSIZE)
-#define KSTACKTOP	VPT
-#define KSTKSIZE	(8*PGSIZE)   		// size of a kernel stack
-#define ULIM		(KSTACKTOP - PTSIZE) 
+#define VPT (KERNBASE - PTSIZE)
+#define KSTACKTOP VPT
+#define KSTKSIZE (8 * PGSIZE)  // size of a kernel stack
+#define ULIM (KSTACKTOP - PTSIZE)
 
 /*
  * User read-only mappings! Anything below here til UTOP are readonly to user.
@@ -102,35 +101,34 @@
  */
 
 // Same as VPT but read-only for users
-#define UVPT		(ULIM - PTSIZE)
+#define UVPT (ULIM - PTSIZE)
 // Read-only copies of the Page structures
-#define UPAGES		(UVPT - PTSIZE)
+#define UPAGES (UVPT - PTSIZE)
 // Read-only copies of the global env structures
-#define UENVS		(UPAGES - PTSIZE)
+#define UENVS (UPAGES - PTSIZE)
 
 /*
  * Top of user VM. User can manipulate VA from UTOP-1 and down!
  */
 
 // Top of user-accessible VM
-#define UTOP		UENVS
+#define UTOP UENVS
 // Top of one-page user exception stack
-#define UXSTACKTOP	UTOP
+#define UXSTACKTOP UTOP
 // Next page left invalid to guard against exception stack overflow; then:
 // Top of normal user stack
-#define USTACKTOP	(UTOP - 2*PGSIZE)
+#define USTACKTOP (UTOP - 2 * PGSIZE)
 
 // Where user programs generally begin
-#define UTEXT		(2*PTSIZE)
+#define UTEXT (2 * PTSIZE)
 
 // Used for temporary page mappings.  Typed 'void*' for convenience
-#define UTEMP		((void*) PTSIZE)
+#define UTEMP ((void *)PTSIZE)
 // Used for temporary page mappings for the user page-fault handler
 // (should not conflict with other temporary page mappings)
-#define PFTEMP		(UTEMP + PTSIZE - PGSIZE)
+#define PFTEMP (UTEMP + PTSIZE - PGSIZE)
 // The location of the user-level STABS data structure
-#define USTABDATA	(PTSIZE / 2)	
-
+#define USTABDATA (PTSIZE / 2)
 
 #ifndef __ASSEMBLER__
 
@@ -151,9 +149,8 @@
 typedef uint32_t pte_t;
 typedef uint32_t pde_t;
 
-extern volatile pte_t vpt[];     // VA of "virtual page table"
-extern volatile pde_t vpd[];     // VA of current page directory
-
+extern volatile pte_t vpt[];  // VA of "virtual page table"
+extern volatile pde_t vpd[];  // VA of current page directory
 
 /*
  * Page descriptor structures, mapped at UPAGES.
@@ -169,14 +166,14 @@ LIST_HEAD(Page_list, Page);
 typedef LIST_ENTRY(Page) Page_LIST_entry_t;
 
 struct Page {
-	Page_LIST_entry_t pp_link;	/* free list link */
+  Page_LIST_entry_t pp_link; /* free list link */
 
-	// pp_ref is the count of pointers (usually in page table entries)
-	// to this page, for pages allocated using page_alloc.
-	// Pages allocated at boot time using pmap.c's
-	// boot_alloc do not have valid reference count fields.
+  // pp_ref is the count of pointers (usually in page table entries)
+  // to this page, for pages allocated using page_alloc.
+  // Pages allocated at boot time using pmap.c's
+  // boot_alloc do not have valid reference count fields.
 
-	uint16_t pp_ref;
+  uint16_t pp_ref;
 };
 
 #endif /* !__ASSEMBLER__ */
