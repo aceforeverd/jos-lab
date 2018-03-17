@@ -1,0 +1,10 @@
+.idea/
+.Session.vim
+*.out
+*.o
+*.s
+*.d
+
+cmake-build-debug/
+obj/
+
