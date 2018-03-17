@@ -166,14 +166,14 @@ LIST_HEAD(Page_list, Page);
 typedef LIST_ENTRY(Page) Page_LIST_entry_t;
 
 struct Page {
-  Page_LIST_entry_t pp_link; /* free list link */
+    Page_LIST_entry_t pp_link; /* free list link */
 
-  // pp_ref is the count of pointers (usually in page table entries)
-  // to this page, for pages allocated using page_alloc.
-  // Pages allocated at boot time using pmap.c's
-  // boot_alloc do not have valid reference count fields.
+    // pp_ref is the count of pointers (usually in page table entries)
+    // to this page, for pages allocated using page_alloc.
+    // Pages allocated at boot time using pmap.c's
+    // boot_alloc do not have valid reference count fields.
 
-  uint16_t pp_ref;
+    uint16_t pp_ref;
 };
 
 #endif /* !__ASSEMBLER__ */

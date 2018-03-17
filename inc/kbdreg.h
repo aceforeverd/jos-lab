@@ -63,7 +63,7 @@
 #define KBC_RESEND 0xFE     /* request the keyboard resend the last byte */
 #define KBC_SETDEFAULT 0xF6 /* resets keyboard to its power-on defaults */
 #define KBC_DISABLE \
-  0xF5 /* as per KBC_SETDEFAULT, but also disable key scanning */
+    0xF5 /* as per KBC_SETDEFAULT, but also disable key scanning */
 #define KBC_ENABLE 0xF4    /* enable key scanning */
 #define KBC_TYPEMATIC 0xF3 /* set typematic rate and delay */
 #define KBC_SETTABLE 0xF0  /* set scancode translation table */
