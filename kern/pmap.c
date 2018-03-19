@@ -18,7 +18,13 @@ static size_t npages_basemem;	// Amount of base memory (in pages)
 pde_t *kern_pgdir;		// Kernel's initial page directory
 struct Page *pages;		// Physical page state array
 static struct Page *page_free_list;	// Free list of physical pages
-static struct Page *chunk_list;
+# define MAXORDER 3
+# define CHUNKTYPE 4
+// Free list of chunks of different orders
+// Each chunk in chunk_list[order] should contain (1<<order) continuous pages
+// Chunks in chunk_list[order] are chained by pp_link field of the leading pages 
+// of the chunks
+static struct Page *chunk_list[CHUNKTYPE];
 
 
 // --------------------------------------------------------------
@@ -68,6 +74,8 @@ static void check_page(void);
 static void check_page_installed_pgdir(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 static void boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
+static void check_chunk_list(void);
+static void check_chunk_alloc(void);
 
 // This simple physical memory allocator is used only while JOS is setting
 // up its virtual memory system.  page_alloc() is the real allocator.
@@ -147,6 +155,16 @@ mem_init(void)
 	// each physical page, there is a corresponding struct Page in this
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
+
+
+	//////////////////////////////////////////////////////////////////////
+	// Think about the chunk allocation, and implement chunk_init(), 
+	// chunk_alloc(), chunk_free()
+
+	chunk_init();
+
+	check_chunk_list();
+	check_chunk_alloc();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -255,7 +273,6 @@ page_init(void)
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-	chunk_list = NULL;
 }
 
 //
@@ -271,6 +288,7 @@ struct Page *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
+	return NULL;
 }
 
 //
@@ -292,6 +310,44 @@ page_decref(struct Page* pp)
 {
 	if (--pp->pp_ref == 0)
 		page_free(pp);
+}
+
+
+void
+chunk_init(void)
+{
+	// hint: you may want to refer to the implementation of page_init()
+}
+
+//
+// Allocates a chunk.  
+//
+// 'order' in parameter suggests the order of the chunk to be allocated.
+//
+// If (alloc_flags & ALLOC_ZERO), fill all the pages
+// int the returned chunk with '\0' bytes.  Do NOT increment the reference
+// count of the page - the caller must do these if necessary
+//
+// Returns NULL if out of free memory.
+//
+struct Page *
+chunk_alloc(int alloc_flags, int order)
+{
+	// Fill this function in
+	return NULL;
+}
+
+//
+// Return a chunk to chunk_list.
+// (This function should only be called when pp->pp_ref of every pages 
+//  within that chunk reaches 0.)
+//
+// You may need to coalesce the free chunks into larger chunks.
+//
+void
+chunk_free(struct Page *pp, int order)
+{
+	// Fill this function in
 }
 
 // Given 'pgdir', a pointer to a page directory, pgdir_walk returns
@@ -578,6 +634,135 @@ check_page_alloc(void)
 	assert(nfree == 0);
 
 	cprintf("check_page_alloc() succeeded!\n");
+}
+
+
+//
+// Check that the chunks on the chunk_list are reasonable.
+//
+static void
+check_chunk_list()
+{
+	struct Page *pp;
+	int nfree_basemem = 0, nfree_extmem = 0;
+	char *first_free_page;
+	int order, i;
+
+	first_free_page = (char *) boot_alloc(0);
+	for (order = 0; order<= MAXORDER; order++){
+		for (pp = chunk_list[order]; pp; pp = pp->pp_link) {
+			assert(pp >= pages);
+			assert(pp < pages + npages);
+			assert(pp + (1<<order) - 1 < pages + npages);
+			assert(((char *) pp - (char *) pages) % sizeof(*pp) == 0);
+
+			// check a few pages that shouldn't be on the free list
+			for (i = 0; i < (1<<order); i++){
+				assert(page2pa(pp+i) != 0);
+				assert(page2pa(pp+i) != IOPHYSMEM);
+				assert(page2pa(pp+i) != EXTPHYSMEM - PGSIZE);
+				assert(page2pa(pp+i) != EXTPHYSMEM);
+				assert(page2pa(pp+i) < EXTPHYSMEM || (char *) page2kva(pp+i) >= first_free_page);
+
+				if (page2pa(pp) < EXTPHYSMEM)
+					++nfree_basemem;
+				else
+					++nfree_extmem;
+			}
+		}
+	}
+
+	assert(nfree_basemem > 0);
+	assert(nfree_extmem > 0);
+}
+
+//
+// Check the chunk allocator (chunk_alloc(), chunk_free(),
+// and chunk_init()).
+//
+static void
+check_chunk_alloc(void)
+{
+	struct Page *pp, *pp0;
+	struct Page *pp_alloc[CHUNKTYPE], *fl[CHUNKTYPE];
+	int nfree, order;
+	char *c;
+	int i;
+
+	// check number of free pages
+	for (order = 0, nfree = 0; order <= MAXORDER; order++){
+		for (pp = chunk_list[order]; pp; pp = pp->pp_link){
+			nfree += (1<<order);
+		}
+	}
+
+	// should be able to allocate chunks of different sizes
+	for (order = 0; order <= MAXORDER; order++){
+		pp_alloc[order] = 0;
+		assert((pp_alloc[order] = chunk_alloc(0, order)));
+		assert(pp_alloc[order]);
+		assert(page2pa(pp_alloc[order] + (1<<order) - 1) < npages*PGSIZE);
+	}
+
+	// pages in a chunk should not overlap with pages in other chunks
+	for (order = 0; order <= MAXORDER; order++) {
+		for (i = 0; i <= MAXORDER; i++){
+			if (order == i) continue;
+			assert((pp_alloc[order] + (1<<order) - 1 < pp_alloc[i]) || (pp_alloc[order] > pp_alloc[i] + (1<<i) - 1));
+		}
+	}
+
+	// temporarily steal the rest of the free pages
+	for (order = 0; order <= MAXORDER; order++){
+		fl[order] = chunk_list[order];
+		chunk_list[order] = 0;
+	}
+
+	// should be no free memory
+	for (order = 0; order <= MAXORDER; order++){
+		assert(!chunk_alloc(0, order));
+	}
+
+	// free and re-allocate?
+	for (order = 0; order <= MAXORDER; order++) {
+		chunk_free(pp_alloc[order], order);
+		pp_alloc[order] = 0;
+	}
+
+	for (order = 0; order <= MAXORDER; order++){
+		pp_alloc[order] = 0;
+		assert((pp_alloc[order] = chunk_alloc(0, order)));
+		assert(pp_alloc[order]);
+		assert(page2pa(pp_alloc[order] + (1<<order) - 1) < npages*PGSIZE);
+	}
+	// pages in a chunk should not overlap with pages in other chunks
+	for (order = 0; order <= MAXORDER; order++) {
+		for (i = 0; i <= MAXORDER; i++){
+			if (order == i) continue;
+			assert((pp_alloc[order] + (1<<order) - 1 < pp_alloc[i]) || (pp_alloc[order] > pp_alloc[i] + (1<<i) - 1));
+		}
+	}
+
+	// give free list back
+	for (order = 0; order <= MAXORDER; order++){
+		chunk_list[order] = fl[order];
+	}
+
+	// free the pages we took
+	for (order = 0; order <= MAXORDER; order++) {
+		chunk_free(pp_alloc[order], order);
+		pp_alloc[order] = 0;
+	}
+
+	// number of free pages should be the same
+	cprintf("check_chunk_alloc() nfree pages: %d!\n", nfree);
+	for (order = 0; order <= MAXORDER; order++){
+		for (pp = chunk_list[order]; pp; pp = pp->pp_link)
+			nfree -= (1<<order);
+	}
+	assert(nfree == 0);
+
+	cprintf("check_chunk_alloc() succeeded!\n");
 }
 
 //
