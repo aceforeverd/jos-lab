@@ -322,11 +322,14 @@ chunk_init(void)
 //
 // Allocates a chunk.  
 //
-// 'order' in parameter suggests the order of the chunk to be allocated.
+// The 'order' parameter suggests the order of the chunk to be allocated.
 //
 // If (alloc_flags & ALLOC_ZERO), fill all the pages
 // int the returned chunk with '\0' bytes.  Do NOT increment the reference
 // count of the page - the caller must do these if necessary
+//
+// The returned page pointer points to the beginning page of a chunk 
+// which should contain (1<<order) pages
 //
 // Returns NULL if out of free memory.
 //
@@ -341,6 +344,10 @@ chunk_alloc(int alloc_flags, int order)
 // Return a chunk to chunk_list.
 // (This function should only be called when pp->pp_ref of every pages 
 //  within that chunk reaches 0.)
+//
+// The 'pp' parameter points to the beginning page of a chunk to be freed 
+// which contains (1<<order) pages
+//
 //
 // You may need to coalesce the free chunks into larger chunks.
 //
