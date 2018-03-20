@@ -51,15 +51,6 @@ check () {
 	else
 		fail
 	fi
-
-	pts=10
-	echo_n "Chunk allocation: "
-	if grep "check_page_alloc() succeeded!" jos.out >/dev/null
-	then
-		pass
-	else
-		fail
-	fi
 }
 
 run
