@@ -24,6 +24,8 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "backtrace", "Display the stack backtrace", mon_backtrace },
+    { "time", "Count the time (cpu cycles) of a command", mon_time },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -56,6 +58,54 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+int mon_time(int argc, char **argv, struct Trapframe *tf) {
+    if (argc <= 1) {
+        cprintf("No command to count\n");
+        cprintf("Usage:\n");
+        cprintf("\ttime [command] [command arguments ...]\n\n");
+        return -1;
+    }
+
+    char *cmd = argv[1];
+    int found = 0;
+    for (int i = 0; i < NCOMMANDS; i++) {
+        if (strcmp(cmd, commands[i].name) == 0) {
+            found = 1;
+            uint32_t start_time_high, start_time_low, end_time_low, end_time_high;
+            uint64_t start, end;
+            __asm __volatile (
+                    "rdtsc\n\t"
+                    "movl %%edx, %0\n\t"
+                    "movl %%eax, %1\n\t"
+                    : "=r" (start_time_high), "=r" (start_time_low)
+                    : : "%eax", "%edx"
+                    );
+
+            commands[i].func(argc - 1, argv + 1, tf);
+
+            __asm __volatile (
+                    "rdtsc\n\t"
+                    "movl %%edx, %0\n\t"
+                    "movl %%eax, %1\n\t"
+                    : "=r" (end_time_high), "=r" (end_time_low)
+                    : : "%eax", "%edx"
+                    );
+
+            start = ((uint64_t)start_time_high << 32) | start_time_low;
+            end = ((uint64_t)end_time_high << 32) | end_time_low;
+            cprintf("%s cycles: %ld\n", cmd, end - start);
+            return 0;
+        }
+    }
+    if (found == 0) {
+        cprintf("command %s not found\n", cmd);
+        return -1;
+    }
+
+    cprintf("unexpected error\n");
+    return -1;
+}
+
 // Lab1 only
 // read the pointer to the retaddr on the stack
 static uint32_t
@@ -65,11 +115,65 @@ read_pretaddr() {
     return pretaddr;
 }
 
+static uint32_t read_ret_pointer(uint32_t ebp)
+{
+    uint32_t ret_pointer;
+    __asm __volatile(
+            "movl (%1), %0"
+            : "=r" (ret_pointer)
+            : "r" (ebp + 4)
+            );
+    return ret_pointer;
+}
+
+static uint32_t
+read_prev_ebp(uint32_t curr_ebp)
+{
+    uint32_t prev_ebp;
+    __asm __volatile(
+            "movl (%1), %0"
+            : "=r" (prev_ebp)
+            : "r" (curr_ebp)
+            );
+    return prev_ebp;
+}
+
+static uint32_t
+read_parameter(uint32_t ebp, uint32_t offset)
+{
+    uint32_t param;
+    __asm __volatile(
+            "movl (%1), %0"
+            : "=r" (param)
+            : "r" (ebp + offset)
+            );
+    return param;
+}
+
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
-    cprintf("Backtrace success\n");
+    cprintf("Stack backtrace:\n");
+    uint32_t ebp = read_ebp();
+    uint32_t eip = read_eip();
+    while (ebp != 0x0) {
+        struct Eipdebuginfo info = {
+            "unknow", 0, "unknow", 7, 0, 0
+        };
+        int result = debuginfo_eip(eip, &info);
+
+        cprintf("eip %08x ebp %08x args %08x %08x %08x %08x %08x\n",
+                eip, ebp,
+                read_parameter(ebp, 8), read_parameter(ebp, 12), read_parameter(ebp, 16),
+                read_parameter(ebp, 20), read_parameter(ebp, 24)
+               );
+        cprintf("%s:%d: %s+%d\n", info.eip_file, info.eip_line,
+                info.eip_fn_name, eip - info.eip_fn_addr);
+        ebp = read_prev_ebp(ebp);
+        // get the prev eip
+        eip = read_ret_pointer(ebp) - 4;
+    }
 	return 0;
 }
 
