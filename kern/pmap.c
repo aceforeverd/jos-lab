@@ -108,12 +108,11 @@ boot_alloc(uint32_t n)
     }
 
     if (n > 0) {
-        if (n > 0xffffffff - KERNBASE ) {
+        if (nextfree < n) {
             panic("no enough memory available");
         }
-        char *ret = nextfree;
-        nextfree = ROUNDUP(nextfree + n, PGSIZE);
-        return ret;
+        nextfree = ROUNDDOWN(nextfree - n, PGSIZE);
+        return nextfree + 1;
     }
 
     panic("unknown error in boot_alloc");
