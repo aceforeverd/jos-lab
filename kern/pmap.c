@@ -186,7 +186,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P);
+    boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -217,7 +217,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region_large(kern_pgdir, KERNBASE, ~KERNBASE, 0, PTE_W);
+    boot_map_region_large(kern_pgdir, KERNBASE, -KERNBASE, 0, PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -397,7 +397,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
             if (!p) {
                 return NULL;
             }
-            p->pp_ref ++;
+            p->pp_ref = 1;
             *page_table = page2pa(p) | PTE_P | PTE_U | PTE_W;
         } else {
             return NULL;
@@ -424,7 +424,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-    cprintf("boot_map_region: size is %u\n", size);
     pte_t *entry;
     for (uintptr_t addr = va; addr < va + size; addr += PGSIZE) {
         if (addr < UTOP) {
@@ -454,7 +453,7 @@ static void
 boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     pde_t *dir_entry;
-    for (uintptr_t offset = va; offset < size; offset += PTSIZE) {
+    for (uintptr_t offset = 0; offset < size; offset += PTSIZE) {
         dir_entry = pgdir + PDX(va + offset);
         /* if (!dir_entry) { */
         /*     panic("boot_map_region_large: unknown error"); */
