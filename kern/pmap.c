@@ -426,14 +426,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 {
     pte_t *entry;
     for (uintptr_t addr = va; addr < va + size; addr += PGSIZE) {
-        if (addr < UTOP) {
-            /* not work */
-            continue;
-        }
         entry = pgdir_walk(pgdir, (void *)addr, 1);
-        if (!entry) {
-            panic("boot_map_region: unknown error");
-        }
         *entry = ((pa + (addr - va)) | perm | PTE_P);
     }
 }
