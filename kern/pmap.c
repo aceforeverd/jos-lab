@@ -117,6 +117,7 @@ boot_alloc(uint32_t n)
     }
 
     panic("unknown error in boot_alloc");
+    return NULL;
 }
 
 // Set up a two-level page table:
@@ -270,7 +271,7 @@ page_init(void)
 	// free pages!
 	size_t i;
     pages[0].pp_ref = 1;
-    pages[0].pp_link = page_free_list;
+    pages[0].pp_link = NULL;
 	for (i = 1; i < npages_basemem; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
@@ -318,12 +319,11 @@ page_alloc(int alloc_flags)
         return NULL;
     }
 
-    if (alloc_flags & ALLOC_ZERO) {
-        memset(page2kva(page_free_list), 0, PGSIZE);
-    }
     struct Page *ret = page_free_list;
-    ret->pp_link = NULL;
     page_free_list = page_free_list->pp_link;
+    if (alloc_flags & ALLOC_ZERO) {
+        memset(page2kva(ret), 0, PGSIZE);
+    }
     return ret;
 }
 
