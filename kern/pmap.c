@@ -279,7 +279,7 @@ page_init(void)
 
     /* 386K hole for IO */
     for (; i < EXTPHYSMEM / PGSIZE; i++) {
-        pages[i].pp_ref = 0;
+        pages[i].pp_ref = 1;
         pages[i].pp_link = NULL;
     }
 
@@ -426,7 +426,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
         if (!entry) {
             panic("boot_map_region: unknown error");
         }
-        *entry = ((pa + (addr - va ) / PGSIZE) | perm | PTE_P);
+        *entry = ((pa + (addr - va)) | perm | PTE_P);
     }
 }
 
@@ -456,7 +456,7 @@ boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, in
         if (*dir_entry & PTE_P) {
             cprintf("boot_map_region_large: overwrite used page!\n");
         }
-        *dir_entry = (pa + (addr - va) / PTSIZE) | PTE_P | PTE_PS;
+        *dir_entry = (pa + (addr - va)) | PTE_P | PTE_PS;
     }
 }
 
