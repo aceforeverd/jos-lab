@@ -202,7 +202,7 @@ mem_init(void)
     boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
     uint32_t addr = KSTACKTOP - PTSIZE;
     while (addr < KSTACKTOP - KSTKSIZE) {
-        pte_t *e = pgdir_walk(kern_pgdir, addr, 0);
+        pte_t *e = pgdir_walk(kern_pgdir, (void *)addr, 0);
         if (e) {
             *e = 0;
         }
