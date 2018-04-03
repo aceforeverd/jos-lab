@@ -162,7 +162,6 @@ mem_init(void)
 	// array.  'npages' is the number of physical pages in memory.
 	// Your code goes here:
     pages = (struct Page *) boot_alloc(npages * sizeof(struct Page));
-    memset(pages, 0, npages * sizeof(struct Page));
 
 
 	//////////////////////////////////////////////////////////////////////
@@ -210,7 +209,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region_large(kern_pgdir, KERNBASE, 0xffffffff - KERNBASE, 0, PTE_W);
+    boot_map_region_large(kern_pgdir, KERNBASE, ~KERNBASE, 0, PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -222,6 +221,7 @@ mem_init(void)
 	//
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
+    // move kern_pgdir to %cr3
 	lcr3(PADDR(kern_pgdir));
 
 	check_page_free_list(0);
@@ -446,18 +446,15 @@ static void
 boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     pde_t *dir_entry;
-    for (uintptr_t addr = va; addr < va + size && addr < 0xffffffff; addr += PTSIZE) {
-        if (addr < UTOP) {
-            continue;
-        }
-        dir_entry = pgdir + PDX(addr);
-        if (!dir_entry) {
-            panic("boot_map_region_large: unknown error");
-        }
+    for (uintptr_t offset = va; offset < size; offset += PTSIZE) {
+        dir_entry = pgdir + PDX(va + offset);
+        /* if (!dir_entry) { */
+        /*     panic("boot_map_region_large: unknown error"); */
+        /* } */
         /* if (*dir_entry & PTE_P) { */
         /*     cprintf("boot_map_region_large: overwrite used page!\n"); */
         /* } */
-        *dir_entry = (pa + (addr - va)) | PTE_P | PTE_PS;
+        *dir_entry = (pa + offset) | perm | PTE_P | PTE_PS;
     }
 }
 
