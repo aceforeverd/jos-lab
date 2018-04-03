@@ -200,14 +200,6 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
     boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
-    uint32_t addr = KSTACKTOP - PTSIZE;
-    while (addr < KSTACKTOP - KSTKSIZE) {
-        pte_t *e = pgdir_walk(kern_pgdir, (void *)addr, 0);
-        if (e) {
-            *e = 0;
-        }
-        addr += PGSIZE;
-    }
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -424,10 +416,12 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
+    assert(va % PGSIZE == 0);
+    assert(size % PGSIZE == 0);
     pte_t *entry;
     for (uintptr_t addr = va; addr < va + size; addr += PGSIZE) {
         entry = pgdir_walk(pgdir, (void *)addr, 1);
-        *entry = ((pa + (addr - va)) | perm | PTE_P);
+        (*entry) = ((pa + (addr - va)) | perm | PTE_P);
     }
 }
 
@@ -446,7 +440,7 @@ static void
 boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     pde_t *dir_entry;
-    for (uintptr_t offset = 0; offset < size; offset += PTSIZE) {
+    for (uint32_t offset = 0; offset < size; offset += PTSIZE) {
         dir_entry = pgdir + PDX(va + offset);
         /* if (!dir_entry) { */
         /*     panic("boot_map_region_large: unknown error"); */
@@ -454,7 +448,7 @@ boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, in
         /* if (*dir_entry & PTE_P) { */
         /*     cprintf("boot_map_region_large: overwrite used page!\n"); */
         /* } */
-        *dir_entry = (pa + offset) | perm | PTE_P | PTE_PS;
+        (*dir_entry) = (pa + offset) | perm | PTE_P | PTE_PS;
     }
 }
 
