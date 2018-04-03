@@ -545,9 +545,9 @@ page_remove(pde_t *pgdir, void *va)
     if (!entry || !(*entry & PTE_P)) {
         return;
     }
-    tlb_invalidate(pgdir, va);
     page_decref(p);
     *entry = 0;
+    tlb_invalidate(pgdir, va);
 }
 
 //
