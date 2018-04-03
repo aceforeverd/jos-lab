@@ -390,7 +390,9 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     pte_t *second_page_table;
     pde_t *page_table = pgdir + PDX(va);
     /* check page directory entry permissions */
-    if (! (*page_table && PTE_P)) {
+    if (*page_table & PTE_P) {
+        second_page_table = KADDR(PTE_ADDR(page_table));
+    } else if (! (*page_table & PTE_P)) {
         /* page directory entry not exist */
         if (create) {
             struct Page *p = (struct Page *) page_alloc(ALLOC_ZERO);
