@@ -283,7 +283,7 @@ page_init(void)
         pages[i].pp_link = NULL;
     }
 
-    for (; i < PGNUM(PADDR(boot_alloc(0))); i++) {
+    for (; i < PADDR(boot_alloc(0)) / PGSIZE; i++) {
         pages[i].pp_ref = 1;
         pages[i].pp_link = NULL;
     }
@@ -322,6 +322,7 @@ page_alloc(int alloc_flags)
         memset(page2kva(page_free_list), 0, PGSIZE);
     }
     struct Page *ret = page_free_list;
+    ret->pp_link = NULL;
     page_free_list = page_free_list->pp_link;
     return ret;
 }
