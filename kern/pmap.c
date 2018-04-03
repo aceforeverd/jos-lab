@@ -498,8 +498,11 @@ page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
     if (!entry) {
         return -E_NO_MEM;
     }
+    if (*entry & PTE_P) {
+        page_remove(pgdir, va);
+    }
     pp->pp_ref ++;
-    page_remove(pgdir, va);
+    tlb_invalidate(pgdir, va);
     *entry = page2pa(pp) | perm | PTE_P;
 	return 0;
 }
@@ -548,7 +551,7 @@ page_remove(pde_t *pgdir, void *va)
 {
     pte_t *entry;
     struct Page *p = page_lookup(pgdir, va, &entry);
-    if (!p) {
+    if (!entry || !(*entry & PTE_P)) {
         return;
     }
     tlb_invalidate(pgdir, va);
