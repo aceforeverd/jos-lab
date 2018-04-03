@@ -487,7 +487,8 @@ boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, in
 int
 page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
 {
-    pte_t *entry = pgdir_walk(pgdir, va, 0);
+    /* create pte if not exist */
+    pte_t *entry = pgdir_walk(pgdir, va, 1);
     if (!entry) {
         return -E_NO_MEM;
     }
