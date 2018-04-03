@@ -111,8 +111,9 @@ boot_alloc(uint32_t n)
         if ((uint32_t)nextfree < n) {
             panic("no enough memory available");
         }
-        nextfree = ROUNDDOWN(nextfree - n, PGSIZE);
-        return nextfree + 1;
+        char *ret = nextfree;
+        nextfree = ROUNDUP(nextfree + n, PGSIZE);
+        return ret;
     }
 
     panic("unknown error in boot_alloc");
@@ -279,6 +280,11 @@ page_init(void)
     /* 386K hole for IO */
     for (; i < EXTPHYSMEM / PGSIZE; i++) {
         pages[i].pp_ref = 0;
+        pages[i].pp_link = NULL;
+    }
+
+    for (; i < PGNUM(PADDR(boot_alloc(0))); i++) {
+        pages[i].pp_ref = 1;
         pages[i].pp_link = NULL;
     }
 
