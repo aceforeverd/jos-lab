@@ -446,7 +446,7 @@ static void
 boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     pde_t *dir_entry;
-    for (uintptr_t addr = va; addr < va + size; addr += PTSIZE) {
+    for (uintptr_t addr = va; addr < va + size && addr < 0xffffffff; addr += PTSIZE) {
         if (addr < UTOP) {
             continue;
         }
@@ -454,9 +454,9 @@ boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, in
         if (!dir_entry) {
             panic("boot_map_region_large: unknown error");
         }
-        if (*dir_entry & PTE_P) {
-            cprintf("boot_map_region_large: overwrite used page!\n");
-        }
+        /* if (*dir_entry & PTE_P) { */
+        /*     cprintf("boot_map_region_large: overwrite used page!\n"); */
+        /* } */
         *dir_entry = (pa + (addr - va)) | PTE_P | PTE_PS;
     }
 }
