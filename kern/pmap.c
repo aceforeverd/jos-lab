@@ -498,11 +498,10 @@ page_insert(pde_t *pgdir, struct Page *pp, void *va, int perm)
     if (!entry) {
         return -E_NO_MEM;
     }
+    pp->pp_ref ++;
     if (*entry & PTE_P) {
         page_remove(pgdir, va);
     }
-    pp->pp_ref ++;
-    tlb_invalidate(pgdir, va);
     *entry = page2pa(pp) | perm | PTE_P;
 	return 0;
 }
