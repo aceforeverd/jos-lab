@@ -67,8 +67,6 @@ static physaddr_t check_va2pa(pde_t *pgdir, uintptr_t va);
 static physaddr_t check_va2pa_large(pde_t *pgdir, uintptr_t va);
 static void check_page(void);
 static int check_continuous(struct Page *pp, int num_page);
-static void check_n_pages(void);
-static void check_realloc_npages(void);
 static void check_page_installed_pgdir(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 static void boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
@@ -168,8 +166,6 @@ mem_init(void)
 	check_page_free_list(1);
 	check_page_alloc();
 	check_page();
-	check_n_pages();
-	check_realloc_npages();
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -290,41 +286,7 @@ struct Page *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	return 0;
-}
-
-//
-// Allocates n continuous physical page. If (alloc_flags & ALLOC_ZERO), fills the n pages 
-// returned physical page with '\0' bytes.  Does NOT increment the reference
-// count of the page - the caller must do these if necessary (either explicitly
-// or via page_insert). 
-//
-// In order to figure out the n pages when return it. 
-// These n pages should be organized as a list.
-//
-// Returns NULL if out of free memory.
-// Returns NULL if n <= 0
-//
-// Try to reuse the pages cached in the chuck list
-//
-// Hint: use page2kva and memset
-struct Page *
-page_alloc_npages(int alloc_flags, int n)
-{
-	// Fill this function
 	return NULL;
-}
-
-// Return n continuous pages to chunk list. Do the following things:
-//	1. Check whether the n pages int the list are continue, Return -1 on Error
-//	2. Add the pages to the chunk list
-//	
-//	Return 0 if everything ok
-int
-page_free_npages(struct Page *pp, int n)
-{
-	// Fill this function
-	return -1;
 }
 
 //
@@ -359,6 +321,7 @@ page_decref(struct Page* pp)
 	if (--pp->pp_ref == 0)
 		page_free(pp);
 }
+
 
 // Given 'pgdir', a pointer to a page directory, pgdir_walk returns
 // a pointer to the page table entry (PTE) for linear address 'va'.
@@ -947,95 +910,6 @@ check_continuous(struct Page *pp, int num_page)
 	return 1;
 }
 
-static void
-check_n_pages(void)
-{
-	struct Page* pp, *pp0;
-	char* addr;
-	int i;
-	pp = pp0 = 0;
-	
-	// Allocate two single pages
-	pp =  page_alloc(0);
-	pp0 = page_alloc(0);
-	assert(pp != 0);
-	assert(pp0 != 0);
-	assert(pp != pp0);
-
-	
-	// Free pp and assign four continuous pages
-	page_free(pp);
-	pp = page_alloc_npages(0, 4);
-	assert(check_continuous(pp, 4));
-
-	// Free four continuous pages
-	assert(!page_free_npages(pp, 4));
-
-	// Free pp and assign eight continuous pages
-	pp = page_alloc_npages(0, 8);
-	assert(check_continuous(pp, 8));
-
-	// Free four continuous pages
-	assert(!page_free_npages(pp, 8));
-
-
-	// Free pp0 and assign four continuous zero pages
-	page_free(pp0);
-	pp0 = page_alloc_npages(ALLOC_ZERO, 4);
-	addr = (char*)page2kva(pp0);
-	
-	// Check Zero
-	for( i = 0; i < 4 * PGSIZE; i++ ){
-		assert(addr[i] == 0);
-	}
-
-	// Free pages
-	assert(!page_free_npages(pp0, 4));
-	cprintf("check_n_pages() succeeded!\n");
-}
-
-static void
-check_realloc_npages(void)
-{
-	struct Page* pp, *pp0;
-	char* addr;
-	int i;
-	pp = pp0 = 0;
-
-	// Allocate two single pages
-	pp =  page_alloc(0);
-	pp0 = page_alloc(0);
-	assert(pp != 0);
-	assert(pp0 != 0);
-	assert(pp != pp0);
-
-	// Free pp and pp0
-	page_free(pp);
-	page_free(pp0);
-
-	// Assign eight continuous pages
-	pp = page_alloc_npages(0, 8);
-	assert(check_continuous(pp, 8));
-
-	// Realloc to 4 pages
-	pp0 = page_realloc_npages(pp, 8, 4);
-	assert(pp0 == pp);
-	assert(check_continuous(pp, 4));
-
-	// Realloc to 6 pages
-	pp0 = page_realloc_npages(pp, 4, 6);
-	assert(pp0 == pp);
-	assert(check_continuous(pp, 6));
-
-	// Realloc to 12 pages
-	pp0 = page_realloc_npages(pp, 6, 12);
-	assert(check_continuous(pp0, 12));
-
-	// Free 12 continuous pages
-	assert(!page_free_npages(pp0, 12));
-
-	cprintf("check_realloc_npages() succeeded!\n");
-}
 
 // check page_insert, page_remove, &c, with an installed kern_pgdir
 static void

@@ -57,10 +57,20 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+// Lab1 only
+// read the pointer to the retaddr on the stack
+static uint32_t
+read_pretaddr() {
+    uint32_t pretaddr;
+    __asm __volatile("leal 4(%%ebp), %0" : "=r" (pretaddr)); 
+    return pretaddr;
+}
+
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
+    cprintf("Backtrace success\n");
 	return 0;
 }
 
