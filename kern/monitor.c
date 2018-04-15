@@ -12,7 +12,20 @@
 #include <kern/kdebug.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
+typedef struct mapping_cmd_ {
+    enum {
+        HELP,
+        DUMP,
+        UNKNOWN,
+    } type;
+    uintptr_t start;
+    uintptr_t end;
+} mapping_cmd;
 
+static void mapping_parse(int argv, char **argc, mapping_cmd *cmd);
+static void mapping_help();
+static void mapping_execute(mapping_cmd *cmd);
+static void mapping_dump(uintptr_t start, uintptr_t end);
 
 struct Command {
 	const char *name;
@@ -26,6 +39,7 @@ static struct Command commands[] = {
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
     { "backtrace", "Display the stack backtrace", mon_backtrace },
     { "time", "Count the time (cpu cycles) of a command", mon_time },
+    { "mapping", "util to manipulate physical address mappings", mon_mapping },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -104,6 +118,65 @@ int mon_time(int argc, char **argv, struct Trapframe *tf) {
 
     cprintf("unexpected error\n");
     return -1;
+}
+
+int mon_mapping(int argc, char **argv, struct Trapframe *tf) {
+    mapping_cmd cmd;
+    mapping_parse(argv, argc, &cmd);
+    mapping_execute(&cmd);
+    return 0;
+}
+
+static void mapping_parse(int argv, char **argc, mapping_cmd *cmd) {
+    assert(cmd);
+    if (argv <= 1) {
+        cprintf("option required\n");
+        mapping_help();
+        return;
+    }
+    char *option = argc[1];
+    if (strcmp(option, "-h") == 0 || strcmp(option, "--help") == 0) {
+        cmd->type = HELP;
+        return;
+    }
+    if ((strcmp(option, "-s") == 0) || strcmp(option, "--show") == 0) {
+        cmd->type = DUMP;
+        cmd->start = 0x0;
+        cmd->end = ~0x0;
+        if (argv == 3) {
+            cmd->start = atoi(argc[2]);
+        } else if (argv >= 4) {
+            cmd->start = atoi(argc[2]);
+            cmd->end = atoi(argc[3]);
+        }
+    } else {
+        cmd->type = UNKNOWN;
+    }
+}
+
+static void mapping_help() {
+    cprintf("mapping [option] [start_addr] [end_addr]\n");
+    cprintf("options: \n");
+    cprintf("\t-h | --help: show this help info\n");
+    cprintf("\t-s | --show: dump mapping info from start_addr to end_addr\n");
+}
+
+static void mapping_execute(mapping_cmd *cmd) {
+    switch (cmd->type) {
+        case HELP:
+            mapping_help();
+            break;
+        case DUMP:
+            mapping_dump(cmd->start, cmd->end);
+            break;
+        default:
+            cprintf("unknown option\n");
+            mapping_help();
+    }
+}
+
+static void mapping_dump(uintptr_t start, uintptr_t end) {
+
 }
 
 // Lab1 only
