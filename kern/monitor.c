@@ -22,7 +22,7 @@ typedef struct mapping_cmd_ {
     uintptr_t end;
 } mapping_cmd;
 
-static void mapping_parse(int argv, char **argc, mapping_cmd *cmd);
+static void mapping_parse(int argc, char **argv, mapping_cmd *cmd);
 static void mapping_help();
 static void mapping_execute(mapping_cmd *cmd);
 static void mapping_dump(uintptr_t start, uintptr_t end);
@@ -40,6 +40,7 @@ static struct Command commands[] = {
     { "backtrace", "Display the stack backtrace", mon_backtrace },
     { "time", "Count the time (cpu cycles) of a command", mon_time },
     { "mapping", "util to manipulate physical address mappings", mon_mapping },
+    { "echo", "display a line of text", mon_echo },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -122,7 +123,7 @@ int mon_time(int argc, char **argv, struct Trapframe *tf) {
 
 int mon_mapping(int argc, char **argv, struct Trapframe *tf) {
     mapping_cmd cmd;
-    mapping_parse(argv, argc, &cmd);
+    mapping_parse(argc, argv, &cmd);
     mapping_execute(&cmd);
     return 0;
 }
@@ -132,6 +133,7 @@ static void mapping_parse(int argv, char **argc, mapping_cmd *cmd) {
     if (argv <= 1) {
         cprintf("option required\n");
         mapping_help();
+        cmd->type = UNKNOWN;
         return;
     }
     char *option = argc[1];
@@ -144,10 +146,10 @@ static void mapping_parse(int argv, char **argc, mapping_cmd *cmd) {
         cmd->start = 0x0;
         cmd->end = ~0x0;
         if (argv == 3) {
-            cmd->start = atoi(argc[2]);
+            /* cmd->start = atoi(argc[2]); */
         } else if (argv >= 4) {
-            cmd->start = atoi(argc[2]);
-            cmd->end = atoi(argc[3]);
+            /* cmd->start = atoi(argc[2]); */
+            /* cmd->end = atoi(argc[3]); */
         }
     } else {
         cmd->type = UNKNOWN;
@@ -162,6 +164,7 @@ static void mapping_help() {
 }
 
 static void mapping_execute(mapping_cmd *cmd) {
+    assert(cmd && cmd->type);
     switch (cmd->type) {
         case HELP:
             mapping_help();
@@ -248,6 +251,16 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
         eip = read_ret_pointer(ebp) - 4;
     }
 	return 0;
+}
+
+int
+mon_echo(int argc, char **argv, struct Trapframe *tf)
+{
+    for (int i = 1; i < argc; i++) {
+        cprintf(argv[i]);
+    }
+    cprintf("\n");
+    return 0;
 }
 
 
