@@ -52,7 +52,7 @@
  *    UVPT      ---->  +------------------------------+ 0xef400000
  *                     |          RO PAGES            | R-/R-  PTSIZE
  *    UPAGES    ---->  +------------------------------+ 0xef000000
- *                     |           RO ENVS            | R-/R-  PTSIZE
+ *                     |           RO ENVS            | R-/R-  PTSIZE => envs
  * UTOP,UENVS ------>  +------------------------------+ 0xeec00000
  * UXSTACKTOP -/       |     User Exception Stack     | RW/RW  PGSIZE
  *                     +------------------------------+ 0xeebff000
