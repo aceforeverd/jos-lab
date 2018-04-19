@@ -21,7 +21,7 @@ struct Page *pages;		// Physical page state array
 static struct Page *page_free_list;	// Free list of physical pages
 static struct Page *chunk_list;
 
-struct Env *envs;
+extern struct Env *envs;
 
 // --------------------------------------------------------------
 // Detect machine's physical memory setup.
