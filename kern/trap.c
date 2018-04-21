@@ -67,9 +67,15 @@ trap_init(void)
 
 	// LAB 3: Your code here.
     for (int i = 0; i < 20; i++) {
-        SETGATE(idt[i], 0, GD_KD, vectors[i], DPL_SUPER);
+        if (i == T_BRKPT) {
+            SETGATE(idt[i], 1, GD_KT, vectors[i], DPL_USER);
+        } else if (i == T_NMI) {
+            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
+        } else {
+            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
+        }
     }
-    SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER);
+    /* SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER); */
 
 	// Per-CPU setup
 	trap_init_percpu();
@@ -79,6 +85,10 @@ trap_init(void)
 void
 trap_init_percpu(void)
 {
+    extern void sysenter_handler();
+    wrmsr(0x174, GD_KT, 0);
+    wrmsr(0x175, KSTACKTOP, 0);
+    wrmsr(0x176, (uint32_t)sysenter_handler, 0);
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
 	ts.ts_esp0 = KSTACKTOP;
