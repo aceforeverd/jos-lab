@@ -16,6 +16,7 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             "pushl %%esi\n\t"
             "pushl %%edi\n\t"
 
+            // lab 3
             "pushl %%esp\n\t"
             "popl %%ebp\n\t"
             "leal ase%=, %%esi\n\t"

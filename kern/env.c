@@ -116,6 +116,7 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+    env_free_list = NULL;
     for (int i = NENV - 1; i >= 0; i--) {
         envs[i].env_id = 0;
         envs[i].env_status = ENV_FREE;
@@ -281,19 +282,16 @@ void region_alloc(struct Env *e, void *va, size_t len)
     uintptr_t start = (uintptr_t) ROUNDDOWN(va, PGSIZE);
     uintptr_t end = (uintptr_t) ROUNDUP(va + len, PGSIZE);
     uintptr_t size = end - start;
-    uintptr_t i = 0;
-    while (i < size) {
+    for (uintptr_t addr = start; addr < end; addr += PGSIZE) {
         struct Page *p = page_alloc(0);
         if (!p) {
             panic("failed to alloc new page");
         }
         p->pp_ref ++;
         int ret;
-        if ((ret = page_insert(e->env_pgdir, p, (void *)start + i, PTE_W | PTE_U)) < 0) {
+        if ((ret = page_insert(e->env_pgdir, p, (void *)addr, PTE_W | PTE_U)) < 0) {
             panic("failed to insert page: %e", ret);
         }
-        p->pp_ref ++;
-        i += PGSIZE;
     }
 }
 
@@ -531,5 +529,6 @@ env_run(struct Env *e)
 
 	panic("env_run not yet implemented");
 }
+
 
 
