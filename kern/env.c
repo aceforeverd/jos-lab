@@ -290,7 +290,7 @@ region_alloc(struct Env *e, void *va, size_t len)
         }
         p->pp_ref ++;
         int ret;
-        if ((ret = page_insert(e->env_pgdir, p, (void *)(start + i), PTE_W | PTE_U)) < 0) {
+        if ((ret = page_insert(e->env_pgdir, p, (void *)start + i, PTE_W | PTE_U)) < 0) {
             panic("failed to insert page: %e", ret);
         }
         p->pp_ref ++;
@@ -357,7 +357,8 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
     if (elf->e_magic != ELF_MAGIC) {
         panic("not a valid elf format");
     }
-    ph = (struct Proghdr *) (elf + elf->e_phoff);
+    e->env_break = UTEXT;
+    ph = (struct Proghdr *) (binary + elf->e_phoff);
     eph = ph + elf->e_phnum;
     for (; ph < eph; ph ++) {
         if (ph->p_type != ELF_PROG_LOAD) {
@@ -367,6 +368,9 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
         if (ph->p_filesz > ph->p_memsz) {
             cprintf("ph->p_filesz is larger than ph->p_memsz\n");
             return;
+        }
+        if (ph->p_va + ph->p_memsz > e->env_break) {
+            e->env_break = (uintptr_t) ROUNDUP(ph->p_va + ph->p_memsz, PGSIZE);
         }
         region_alloc(e, (void *)ph->p_va, ph->p_memsz);
         memmove((void *) ph->p_va, binary + ph->p_offset, ph->p_filesz);
