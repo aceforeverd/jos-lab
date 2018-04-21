@@ -19,4 +19,8 @@ int mon_time(int argc, char **argv, struct Trapframe *tf);
 int mon_mapping(int argc, char **argv, struct Trapframe *tf);
 int mon_echo(int argc, char **argv, struct Trapframe *tf);
 
+int mon_c(int argc, char **argv, struct Trapframe *tf);
+int mon_si(int argc, char **argv, struct Trapframe *tf);
+int mon_x(int argc, char **argv, struct Trapframe *tf);
+
 #endif	// !JOS_KERN_MONITOR_H

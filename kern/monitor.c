@@ -28,6 +28,8 @@ static void mapping_help();
 static void mapping_execute(mapping_cmd *cmd);
 static void mapping_dump(uintptr_t start, uintptr_t end);
 
+static int string_to_addr(const char *str, int len, uintptr_t *address);
+
 struct Command {
 	const char *name;
 	const char *desc;
@@ -42,6 +44,9 @@ static struct Command commands[] = {
     { "time", "Count the time (cpu cycles) of a command", mon_time },
     { "mapping", "util to manipulate physical address mappings", mon_mapping },
     { "echo", "display a line of text", mon_echo },
+    { "c", "continue execution", mon_c },
+    { "si", "executing the code instruction by instruction", mon_si },
+    { "x", "display the memory", mon_x },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -261,6 +266,72 @@ mon_echo(int argc, char **argv, struct Trapframe *tf)
         cprintf(argv[i]);
     }
     cprintf("\n");
+    return 0;
+}
+
+int mon_c(int argc, char **argv, struct Trapframe *tf) {
+    tf->tf_eflags = tf->tf_eflags & (~FL_TF);
+    return 0;
+}
+
+int mon_si(int argc, char **argv, struct Trapframe *tf) {
+    tf->tf_eflags |= FL_TF;
+
+    cprintf("tf_eip=%08x\n", tf->tf_eip);
+    struct Eipdebuginfo info = {
+        "unknow", 0, "unknow", 7, 0, 0
+    };
+    int result = debuginfo_eip(tf->tf_eip, &info);
+    cprintf("%s:%d: %s+%d\n", info.eip_file, info.eip_line,
+            info.eip_fn_name, tf->tf_eip - info.eip_fn_addr);
+    return 0;
+}
+
+/*
+ * convert a string to an virtual address
+ * 0 on success
+ * -1 on fail
+ */
+static int string_to_addr(const char *str, int len, uintptr_t *address) {
+    uintptr_t addr = 0;
+    uintptr_t base = 16;
+    for (int i = 0; i < len; i++) {
+        char c = str[i];
+        addr *= base;
+        if (c >= '0' && c <= '9') {
+            addr = addr + (c - '0');
+        } else if (c >= 'a' && c <= 'f') {
+            addr += (c - 'a');
+        } else if (c >= 'A' && c <= 'F') {
+            addr += (c - 'A');
+        } else {
+            return -1;
+        }
+    }
+    *address = addr;
+    return 0;
+}
+/*
+ * display the memory
+ * print the 4-byte data in the given address
+ */
+int mon_x(int argc, char **argv, struct Trapframe *tf) {
+    if (argc != 2) {
+        cprintf("Usage: x [address]\n");
+        cprintf("\taddress: hexadecimal number, e.g 0x12003400\n");
+        /* ?? */
+        return -1;
+    }
+    uintptr_t addr;
+    char *str = argv[1];
+    if (str[0] == '0' && str[1] == 'x') {
+        str += 2;
+    }
+    if (string_to_addr(str, strlen(str), &addr) < 0) {
+        cprintf("string %s is not a valid address\n", argv[1]);
+        return 0;
+    }
+    cprintf("%u\n", *(uint32_t *)addr);
     return 0;
 }
 
