@@ -591,6 +591,23 @@ tlb_invalidate(pde_t *pgdir, void *va)
 
 static uintptr_t user_mem_check_addr;
 
+/*
+ * return 0 on success
+ * -1 on failed
+ */
+static int user_mem_check_page(struct Env *env, void *va, int perm) {
+    /* assert(va % PGSIZE == 0); */
+    perm |= PTE_P;
+    uintptr_t addr = (uintptr_t) va;
+    if (addr >= ULIM) {
+        return -1;
+    }
+    pte_t *pte = pgdir_walk(env->env_pgdir, va, 0);
+    if (!pte || (*pte & perm) != perm) {
+        return -1;
+    }
+    return 0;
+}
 //
 // Check that an environment is allowed to access the range of memory
 // [va, va+len) with permissions 'perm | PTE_P'.
@@ -613,8 +630,23 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
+    uintptr_t addr = (uintptr_t) va;
+    if (addr % PGSIZE != 0) {
+        if (user_mem_check_page(env, (void *)addr, perm) < 0) {
+            /* failed */
+            user_mem_check_addr = addr;
+            return -E_FAULT;
+        }
+        addr = ROUNDUP(addr, PGSIZE);
+    }
+    for (; addr < (uintptr_t) va + len; addr += PGSIZE) {
+        if (user_mem_check_page(env, (void *)addr, perm) < 0) {
+            user_mem_check_addr = addr;
+            return -E_FAULT;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 //
