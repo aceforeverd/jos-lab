@@ -30,23 +30,23 @@ extern unsigned int vectors[];  // array of 256 entry points
 static const char *trapname(int trapno)
 {
 	static const char * const excnames[] = {
-		"Divide error",
-		"Debug",
-		"Non-Maskable Interrupt",
-		"Breakpoint",
-		"Overflow",
-		"BOUND Range Exceeded",
-		"Invalid Opcode",
-		"Device Not Available",
-		"Double Fault",
-		"Coprocessor Segment Overrun",
-		"Invalid TSS",
-		"Segment Not Present",
-		"Stack Fault",
-		"General Protection",
-		"Page Fault",
-		"(unknown trap)",
-		"x87 FPU Floating-Point Error",
+		"Divide error", // 0
+		"Debug", // 1
+		"Non-Maskable Interrupt", // 2
+		"Breakpoint", // 3
+		"Overflow", // 4
+		"BOUND Range Exceeded", // 5
+		"Invalid Opcode", // 6
+		"Device Not Available", // 7
+		"Double Fault", // 8
+		"Coprocessor Segment Overrun", // 9
+		"Invalid TSS", // 10
+		"Segment Not Present", // 11
+		"Stack Fault", // 12
+		"General Protection", // 13
+		"Page Fault", // 14
+		"(unknown trap)", // 15
+		"x87 FPU Floating-Point Error", // 16
 		"Alignment Check",
 		"Machine-Check",
 		"SIMD Floating-Point Exception"

@@ -129,7 +129,6 @@ _trapret:
 	.long handler5
 	.long handler6
 	.long handler7
-	.long handler5
 	.long handler8
 	.long handler9
 	.long handler10
