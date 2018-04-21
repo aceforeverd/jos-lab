@@ -122,14 +122,12 @@ sysenter_handler:
  	# trap frame
  	pushl %ds
 	pushl %es
-	pushl %fs
-	pushl %gs
-	pushal
 
 	movw $(GD_KD), %ax
 	movw %ax, %ds
 	movw %ax, %es
 
+	pushal
 	pushl %esp
 	call trap
 	addl $4, %esp
