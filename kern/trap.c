@@ -24,7 +24,7 @@ struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
 	sizeof(idt) - 1, (uint32_t) idt
 };
-extern uint vectors[];  // array of 256 entry points
+extern unsigned int vectors[];  // array of 256 entry points
 
 
 static const char *trapname(int trapno)

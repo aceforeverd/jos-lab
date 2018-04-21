@@ -279,8 +279,8 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
-    uintptr_t start = ROUNDDOWN(va, PGSIZE);
-    uintptr_t end = ROUNDUP(va + len, PGSIZE);
+    uintptr_t start = (uintptr_t) ROUNDDOWN(va, PGSIZE);
+    uintptr_t end = (uintptr_t) ROUNDUP(va + len, PGSIZE);
     uintptr_t size = end - start;
     uintptr_t i = 0;
     while (i < size) {
@@ -290,7 +290,7 @@ region_alloc(struct Env *e, void *va, size_t len)
         }
         p->pp_ref ++;
         int ret;
-        if ((ret = page_insert(e->env_pgdir, p, start + i, PTE_W | PTE_U)) < 0) {
+        if ((ret = page_insert(e->env_pgdir, p, (void *)(start + i), PTE_W | PTE_U)) < 0) {
             panic("failed to insert page: %e", ret);
         }
         p->pp_ref ++;
@@ -353,10 +353,10 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 	// LAB 3: Your code here.
     struct Proghdr *ph, *eph;
-    if (binary->e_magic != ELF_MAGIC) {
+    struct Elf *elf = (struct Elf *) binary;
+    if (elf->e_magic != ELF_MAGIC) {
         panic("not a valid elf format");
     }
-    struct Elf *elf = (struct Elf *) binary;
     ph = (struct Proghdr *) (elf + elf->e_phoff);
     eph = ph + elf->e_phnum;
     for (; ph < eph; ph ++) {
@@ -369,8 +369,8 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
             return;
         }
         region_alloc(e, (void *)ph->p_va, ph->p_memsz);
-        memmove(ph->p_va, binary + ph->p_offset, ph->p_filesz);
-        memset(ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+        memmove((void *) ph->p_va, binary + ph->p_offset, ph->p_filesz);
+        memset((void *) ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
     }
     e->env_tf.tf_eip = elf->e_entry;
 
@@ -396,7 +396,7 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
     struct Env *e;
     int ret;
     if ((ret = env_alloc(&e, 0)) < 0) {
-        painc("failed to alloc env: %e", ret);
+        panic("failed to alloc env: %e", ret);
     }
     load_icode(e, binary, size);
     e->env_type = type;
@@ -404,7 +404,7 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
 
 //
 // Frees env e and all memory it uses.
-/
+//
 void
 env_free(struct Env *e)
 {
@@ -528,4 +528,5 @@ env_run(struct Env *e)
 
 	panic("env_run not yet implemented");
 }
+
 
