@@ -16,13 +16,12 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             "pushl %%esi\n\t"
             "pushl %%edi\n\t"
 
-            //Lab 3: Your code here
             "pushl %%esp\n\t"
             "popl %%ebp\n\t"
-            "leal after_sysenter_label, %%esi"
+            "leal ase%=, %%esi\n\t"
             "sysenter\n\t"
 
-            "after_sysenter_label:\n\t"
+            "ase%=:\n\t"
 
             "popl %%edi\n\t"
             "popl %%esi\n\t"
