@@ -46,7 +46,53 @@
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+ TRAPHANDLER_NOEC(handler0, T_DIVIDE)
+ TRAPHANDLER_NOEC(handler1, T_DEBUG)
+ TRAPHANDLER_NOEC(handler2, T_NMI)
+ TRAPHANDLER_NOEC(handler3, T_BRKPT)
+ TRAPHANDLER_NOEC(handler4, T_OFLOW)
+ TRAPHANDLER_NOEC(handler5, T_BOUND)
+ TRAPHANDLER_NOEC(handler6, T_ILLOP)
+ TRAPHANDLER_NOEC(handler7, T_DEVIC)
 
+ TRAPHANDLER(handler8, T_DBLFLT)
+ TRAPHANDLER(handler9, 9) // not used
+ TRAPHANDLER(handler10, T_TSS)
+ TRAPHANDLER(handler11, T_SEGNP)
+ TRAPHANDLER(handler12, T_STACK)
+ TRAPHANDLER(handler13, T_GPFLT)
+ TRAPHANDLER(handler14, T_PGFLT)
+ TRAPHANDLER(handler15, 15) // not used
+
+ TRAPHANDLER_NOEC(handler16, T_FPERR)
+ TRAPHANDLER_NOEC(handler17, T_ALIGN)
+ TRAPHANDLER_NOEC(handler18, T_MCHK)
+ TRAPHANDLER_NOEC(handler19, T_SIMDERR)
+
+ .data
+ .global vectors
+ vectors:
+ 	.long handler0
+	.long handler1
+	.long handler2
+	.long handler3
+	.long handler4
+	.long handler5
+	.long handler6
+	.long handler7
+	.long handler5
+	.long handler8
+	.long handler9
+	.long handler10
+	.long handler11
+	.long handler12
+	.long handler13
+	.long handler14
+	.long handler15
+	.long handler16
+	.long handler17
+	.long handler18
+	.long handler19
 
 
 .globl sysenter_handler;
@@ -56,9 +102,44 @@ sysenter_handler:
 /*
  * Lab 3: Your code here for system call handling
  */
+ pushl $0
+ pushl %edi
+ pushl %ebx
+ pushl %ecx
+ pushl %edx
+ pushl %eax
+ call syscall
+ movl %ebp, %ecx
+ movl %esi, %edx
+ sysexit
 
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+ .globl _alltraps
+ _alltraps:
+ 	# trap frame
+ 	pushl %ds
+	pushl %es
+	pushl %fs
+	pushl %gs
+	pushal
 
+	movw $(GD_KD), %ax
+	movw %ax, %ds
+	movw %ax, %es
+
+	pushl %esp
+	call trap
+	addl $4, %esp
+
+.global _trapret
+_trapret:
+	popal
+	popl %gs
+	popl %fs
+	popl %es
+	popl %ds
+	addl $0x8, %esp # trap number and error code
+	iret

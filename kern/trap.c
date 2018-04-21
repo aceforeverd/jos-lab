@@ -24,6 +24,7 @@ struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
 	sizeof(idt) - 1, (uint32_t) idt
 };
+extern uint vectors[];  // array of 256 entry points
 
 
 static const char *trapname(int trapno)
@@ -53,7 +54,7 @@ static const char *trapname(int trapno)
 
 	if (trapno < sizeof(excnames)/sizeof(excnames[0]))
 		return excnames[trapno];
-	if (trapno == T_SYSCALL)
+	if (trapno == T_SYSCALL) // T_SYSCALL : 48
 		return "System call";
 	return "(unknown trap)";
 }
@@ -65,8 +66,12 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+    for (int i = 0; i < 20; i++) {
+        SETGATE(idt[i], 0, GD_KD, vectors[i], DPL_SUPER);
+    }
+    SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER);
 
-	// Per-CPU setup 
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -143,6 +148,14 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+    switch (tf->tf_trapno) {
+        case T_BRKPT: case T_DEBUG:
+            monitor(tf);
+            return;
+        case T_PGFLT:
+            page_fault_handler(tf);
+            return;
+    }
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
@@ -201,6 +214,9 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
+    if (!(tf->tf_cs & 0x3)) {
+        panic("kernel mode page fault");
+    }
 
 	// LAB 3: Your code here.
 
