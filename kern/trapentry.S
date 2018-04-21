@@ -69,31 +69,6 @@
  TRAPHANDLER_NOEC(handler18, T_MCHK)
  TRAPHANDLER_NOEC(handler19, T_SIMDERR)
 
- .data
- .global vectors
- vectors:
- 	.long handler0
-	.long handler1
-	.long handler2
-	.long handler3
-	.long handler4
-	.long handler5
-	.long handler6
-	.long handler7
-	.long handler5
-	.long handler8
-	.long handler9
-	.long handler10
-	.long handler11
-	.long handler12
-	.long handler13
-	.long handler14
-	.long handler15
-	.long handler16
-	.long handler17
-	.long handler18
-	.long handler19
-
 
 .globl sysenter_handler;
 .type sysenter_handler, @function;
@@ -141,3 +116,29 @@ _trapret:
 	popl %ds
 	addl $0x8, %esp # trap number and error code
 	iret
+
+
+ .data
+ .global vectors
+ vectors:
+ 	.long handler0
+	.long handler1
+	.long handler2
+	.long handler3
+	.long handler4
+	.long handler5
+	.long handler6
+	.long handler7
+	.long handler5
+	.long handler8
+	.long handler9
+	.long handler10
+	.long handler11
+	.long handler12
+	.long handler13
+	.long handler14
+	.long handler15
+	.long handler16
+	.long handler17
+	.long handler18
+	.long handler19
