@@ -281,7 +281,6 @@ void region_alloc(struct Env *e, void *va, size_t len)
 	//   (Watch out for corner-cases!)
     uintptr_t start = (uintptr_t) ROUNDDOWN(va, PGSIZE);
     uintptr_t end = (uintptr_t) ROUNDUP(va + len, PGSIZE);
-    uintptr_t size = end - start;
     for (uintptr_t addr = start; addr < end; addr += PGSIZE) {
         struct Page *p = page_alloc(0);
         if (!p) {
@@ -360,25 +359,25 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
     for (; ph < eph; ph ++) {
         if (ph->p_type != ELF_PROG_LOAD) {
             cprintf("ph->p_type is not ELF_PROG_LOAD\n");
-            return;
+            continue;
         }
         if (ph->p_filesz > ph->p_memsz) {
             cprintf("ph->p_filesz is larger than ph->p_memsz\n");
-            return;
+            continue;
         }
         if (ph->p_va + ph->p_memsz > e->env_break) {
             e->env_break = (uintptr_t) ROUNDUP(ph->p_va + ph->p_memsz, PGSIZE);
         }
         region_alloc(e, (void *)ph->p_va, ph->p_memsz);
         memmove((void *) ph->p_va, binary + ph->p_offset, ph->p_filesz);
-        memset((void *) ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+        memset((void *) (ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
     }
     e->env_tf.tf_eip = elf->e_entry;
 
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-    region_alloc(e, (void *)USTACKTOP - PGSIZE, PGSIZE);
+    region_alloc(e, (void *)(USTACKTOP - PGSIZE), PGSIZE);
 
 	// LAB 3: Your code here.
 }
@@ -399,7 +398,9 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
     if ((ret = env_alloc(&e, 0)) < 0) {
         panic("failed to alloc env: %e", ret);
     }
+    lcr3(PADDR(e->env_pgdir));
     load_icode(e, binary, size);
+    lcr3(PADDR(kern_pgdir));
     e->env_type = type;
 }
 
@@ -516,8 +517,11 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+    if (!e) {
+        return;
+    }
     if (e != curenv) {
-        if (curenv->env_status == ENV_RUNNING) {
+        if (curenv && curenv->env_status == ENV_RUNNING) {
             curenv->env_status = ENV_RUNNABLE;
         }
         curenv = e;
@@ -527,7 +531,6 @@ env_run(struct Env *e)
     }
     env_pop_tf(&e->env_tf);
 
-	panic("env_run not yet implemented");
 }
 
 
