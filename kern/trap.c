@@ -72,7 +72,7 @@ trap_init(void)
         } else if (i == T_NMI) {
             SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
         } else {
-            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
+            SETGATE(idt[i], 1, GD_KT, vectors[i], DPL_SUPER);
         }
     }
     /* SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER); */
