@@ -7,7 +7,7 @@
 
 char gdt_pgs[2 * PGSIZE];
 void (*evil_func)();
-struct Gatedesc *gd, gd_bak;
+struct Gatedesc *gd;
 
 // Call this function with ring0 privilege
 void evil()
@@ -38,7 +38,6 @@ sgdt(struct Pseudodesc* gdtd)
 
 void call_evil_func() {
     evil_func();
-    *gd = gd_bak;
     asm volatile (
             "leave\n\t"
             "lret");
@@ -68,12 +67,11 @@ void ring0_call(void (*fun_ptr)(void)) {
              (void *)(ROUNDUP((uintptr_t)gdt_pgs, PGSIZE)))) < 0) {
         panic("sys map kernel page failed: %e\n", ret);
     }
+    evil_func = fun_ptr;
     struct Segdesc *gdt =
         (struct Segdesc *)(ROUNDUP((uintptr_t)gdt_pgs, PGSIZE) +
                            PGOFF(dp.pd_base));
     gd = (struct Gatedesc *)gdt + (GD_TSS0 >> 3);
-    gd_bak = *gd;
-    evil_func = fun_ptr;
     SETCALLGATE(*gd, GD_KT, call_evil_func, 3);
     __asm__ volatile("lcall %0, $0" : : "i"(GD_TSS0));
 }
