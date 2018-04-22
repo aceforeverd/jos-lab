@@ -271,7 +271,7 @@ mon_echo(int argc, char **argv, struct Trapframe *tf)
 
 int mon_c(int argc, char **argv, struct Trapframe *tf) {
     tf->tf_eflags = tf->tf_eflags & (~FL_TF);
-    return 0;
+    return -1;
 }
 
 int mon_si(int argc, char **argv, struct Trapframe *tf) {
@@ -284,7 +284,7 @@ int mon_si(int argc, char **argv, struct Trapframe *tf) {
     int result = debuginfo_eip(tf->tf_eip, &info);
     cprintf("%s:%d: %s+%d\n", info.eip_file, info.eip_line,
             info.eip_fn_name, tf->tf_eip - info.eip_fn_addr);
-    return 0;
+    return -1;
 }
 
 /*

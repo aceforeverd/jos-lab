@@ -109,7 +109,7 @@ void
 print_trapframe(struct Trapframe *tf)
 {
 	cprintf("TRAP frame at %p\n", tf);
-    if (tf->tf_cs & 3 == 0) {
+    if ((tf->tf_cs & 3) == 0) {
         cprintf("kernel mode trap\n");
     } else {
         cprintf("user mode trap\n");
