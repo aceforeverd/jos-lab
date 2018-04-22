@@ -68,11 +68,9 @@ trap_init(void)
 	// LAB 3: Your code here.
     for (int i = 0; i < 20; i++) {
         if (i == T_BRKPT) {
-            SETGATE(idt[i], 1, GD_KT, vectors[i], DPL_USER);
-        } else if (i == T_NMI) {
-            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
+            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_USER);
         } else {
-            SETGATE(idt[i], 1, GD_KT, vectors[i], DPL_SUPER);
+            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
         }
     }
     /* SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER); */
@@ -111,6 +109,11 @@ void
 print_trapframe(struct Trapframe *tf)
 {
 	cprintf("TRAP frame at %p\n", tf);
+    if (tf->tf_cs & 3 == 0) {
+        cprintf("kernel mode trap\n");
+    } else {
+        cprintf("user mode trap\n");
+    }
 	print_regs(&tf->tf_regs);
 	cprintf("  es   0x----%04x\n", tf->tf_es);
 	cprintf("  ds   0x----%04x\n", tf->tf_ds);
