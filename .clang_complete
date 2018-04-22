@@ -1,0 +1,4 @@
+-I./inc
+-I./conf
+-I./lib
+-I./kern
