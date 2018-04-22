@@ -301,9 +301,9 @@ static int string_to_addr(const char *str, int len, uintptr_t *address) {
         if (c >= '0' && c <= '9') {
             addr = addr + (c - '0');
         } else if (c >= 'a' && c <= 'f') {
-            addr += (c - 'a');
+            addr += (c - 'a' + 10);
         } else if (c >= 'A' && c <= 'F') {
-            addr += (c - 'A');
+            addr += (c - 'A' + 10);
         } else {
             return -1;
         }
@@ -320,7 +320,7 @@ int mon_x(int argc, char **argv, struct Trapframe *tf) {
         cprintf("Usage: x [address]\n");
         cprintf("\taddress: hexadecimal number, e.g 0x12003400\n");
         /* ?? */
-        return -1;
+        return 0;
     }
     uintptr_t addr;
     char *str = argv[1];
