@@ -63,11 +63,14 @@ void ring0_call(void (*fun_ptr)(void)) {
     struct Pseudodesc dp;
     sgdt(&dp);
     int ret = 0;
-    if ((ret = sys_map_kernel_page((void *)dp.pd_base, (void*)(gdt_pgs + PGSIZE))) < 0) {
+    if ((ret = sys_map_kernel_page(
+             (void *)dp.pd_base,
+             (void *)(ROUNDUP((uintptr_t)gdt_pgs, PGSIZE)))) < 0) {
         panic("sys map kernel page failed: %e\n", ret);
     }
-    struct Segdesc *gdt = (struct Segdesc *) (ROUNDDOWN(gdt_pgs + PGSIZE, PGSIZE) +
-                                                        PGOFF(dp.pd_base));
+    struct Segdesc *gdt =
+        (struct Segdesc *)(ROUNDUP((uintptr_t)gdt_pgs, PGSIZE) +
+                           PGOFF(dp.pd_base));
     gd = (struct Gatedesc *)gdt + (GD_TSS0 >> 3);
     gd_bak = *gd;
     evil_func = fun_ptr;
@@ -84,4 +87,3 @@ umain(int argc, char **argv)
 	// call the evil function in ring3
 	evil();
 }
-
