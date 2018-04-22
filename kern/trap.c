@@ -84,9 +84,9 @@ void
 trap_init_percpu(void)
 {
     extern void sysenter_handler();
-    wrmsr(0x174, GD_KT, 0);
-    wrmsr(0x175, KSTACKTOP, 0);
-    wrmsr(0x176, (uint32_t)sysenter_handler, 0);
+    wrmsr(0x174, GD_KT, 0); /* SYSENTER_CS_MSR */
+    wrmsr(0x175, KSTACKTOP, 0);	/* SYSENTER_ESP_MSR */
+    wrmsr(0x176, (uint32_t)sysenter_handler, 0);		/* SYSENTER_EIP_MSR */
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
 	ts.ts_esp0 = KSTACKTOP;

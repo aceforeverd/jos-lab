@@ -77,7 +77,6 @@ sysenter_handler:
 /*
  * Lab 3: Your code here for system call handling
  */
- pushl $0
  pushl %edi
  pushl %ebx
  pushl %ecx

@@ -1,5 +1,5 @@
 1. What is the purpose of having an individual handler function for each exception/interrupt? (i.e., if all exceptions/interrupts were delivered to the same handler, what feature that exists in the current implementation could not be provided?)
- each descriptor of the idt can be slightly different. E.g. the permission(dpl) of each descriptor is not the same. 
+ each descriptor of the idt can be slightly different. E.g. the permission(dpl) of each descriptor is not the same.
  More customization.
  Avoid mess up with each other.
 
@@ -7,7 +7,9 @@
   Nop. The descriptor privilege level of trap 14 is set to 0, which means it can only handled in kernel mode, user do not have the permission and a protect fault is produced
 
 3. The break point test case will either generate a break point exception or a general protection fault depending on how you initialized the break point entry in the IDT (i.e., your call to SETGATE from trap_init). Why? How do you need to set it up in order to get the breakpoint exception to work as specified above and what incorrect setup would cause it to trigger a general protection fault?
+ the idt entry of T_BRKPT should set dpl to 3 (user level)
+ error setups:
+   + set idt entry of T_BRKPT with dpl 0 (super level), this will prevent run at user level
 
 4. What do you think is the point of these mechanisms, particularly in light of what the user/softint test program does?
- - security. sperate user level and kernel level program. avoid vulnerability.
- - 
+ + security. sperate user level and kernel level program. Avoid vulnerability.
