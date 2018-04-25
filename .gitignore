@@ -17,3 +17,5 @@
 /sol?/
 /conf/lab.mk
 cscope.out
+.idea/
+cmake-build-debug/

@@ -29,6 +29,7 @@ struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
 	sizeof(idt) - 1, (uint32_t) idt
 };
+extern unsigned int vectors[];  // array of 256 entry points
 
 
 static const char *trapname(int trapno)
@@ -72,6 +73,14 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+    for (int i = 0; i < 20; i++) {
+        if (i == T_BRKPT) {
+            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_USER);
+        } else {
+            SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
+        }
+    }
+    /* SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER); */
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -81,6 +90,10 @@ trap_init(void)
 void
 trap_init_percpu(void)
 {
+    extern void sysenter_handler();
+    wrmsr(0x174, GD_KT, 0); /* SYSENTER_CS_MSR */
+    wrmsr(0x175, KSTACKTOP, 0);	/* SYSENTER_ESP_MSR */
+    wrmsr(0x176, (uint32_t)sysenter_handler, 0);		/* SYSENTER_EIP_MSR */
 	// The example code here sets up the Task State Segment (TSS) and
 	// the TSS descriptor for CPU 0. But it is incorrect if we are
 	// running on other CPUs because each CPU has its own kernel stack.
@@ -125,7 +138,13 @@ trap_init_percpu(void)
 void
 print_trapframe(struct Trapframe *tf)
 {
-	cprintf("TRAP frame at %p from CPU %d\n", tf, cpunum());
+	// cprintf("TRAP frame at %p from CPU %d\n", tf, cpunum());
+	cprintf("TRAP frame at %p\n", tf);
+    if ((tf->tf_cs & 3) == 0) {
+        cprintf("kernel mode trap\n");
+    } else {
+        cprintf("user mode trap\n");
+    }
 	print_regs(&tf->tf_regs);
 	cprintf("  es   0x----%04x\n", tf->tf_es);
 	cprintf("  ds   0x----%04x\n", tf->tf_ds);
@@ -173,6 +192,16 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+    switch (tf->tf_trapno) {
+        case T_BRKPT: case T_DEBUG:
+            monitor(tf);
+            return;
+        case T_PGFLT:
+            page_fault_handler(tf);
+            return;
+        default:
+            break;
+    }
 
 	// Handle spurious interrupts
 	// The hardware sometimes raises these because of noise on the
@@ -214,6 +243,8 @@ trap(struct Trapframe *tf)
 	// the interrupt path.
 	assert(!(read_eflags() & FL_IF));
 
+	cprintf("Incoming TRAP frame at %p\n", tf);
+
 	if ((tf->tf_cs & 3) == 3) {
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
@@ -231,6 +262,7 @@ trap(struct Trapframe *tf)
 		// Copy trap frame (which is currently on the stack)
 		// into 'curenv->env_tf', so that running the environment
 		// will restart at the trap point.
+		assert(curenv);
 		curenv->env_tf = *tf;
 		// The trapframe on the stack should be ignored from here on.
 		tf = &curenv->env_tf;
@@ -262,6 +294,9 @@ page_fault_handler(struct Trapframe *tf)
 	fault_va = rcr2();
 
 	// Handle kernel-mode page faults.
+    if (!(tf->tf_cs & 0x3)) {
+        panic("kernel mode page fault");
+    }
 
 	// LAB 3: Your code here.
 

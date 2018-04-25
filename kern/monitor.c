@@ -13,7 +13,22 @@
 #include <kern/trap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
+typedef struct mapping_cmd_ {
+    enum {
+        HELP,
+        DUMP,
+        UNKNOWN,
+    } type;
+    uintptr_t start;
+    uintptr_t end;
+} mapping_cmd;
 
+static void mapping_parse(int argc, char **argv, mapping_cmd *cmd);
+static void mapping_help();
+static void mapping_execute(mapping_cmd *cmd);
+static void mapping_dump(uintptr_t start, uintptr_t end);
+
+static int string_to_addr(const char *str, int len, uintptr_t *address);
 
 struct Command {
 	const char *name;
@@ -25,6 +40,13 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+    { "backtrace", "Display the stack backtrace", mon_backtrace },
+    { "time", "Count the time (cpu cycles) of a command", mon_time },
+    { "mapping", "util to manipulate physical address mappings", mon_mapping },
+    { "echo", "display a line of text", mon_echo },
+    { "c", "continue execution", mon_c },
+    { "si", "executing the code instruction by instruction", mon_si },
+    { "x", "display the memory", mon_x },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -57,6 +79,115 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+int mon_time(int argc, char **argv, struct Trapframe *tf) {
+    if (argc <= 1) {
+        cprintf("No command to count\n");
+        cprintf("Usage:\n");
+        cprintf("\ttime [command] [command arguments ...]\n\n");
+        return -1;
+    }
+
+    char *cmd = argv[1];
+    int found = 0;
+    for (int i = 0; i < NCOMMANDS; i++) {
+        if (strcmp(cmd, commands[i].name) == 0) {
+            found = 1;
+            uint32_t start_time_high, start_time_low, end_time_low, end_time_high;
+            uint64_t start, end;
+            __asm __volatile (
+                    "rdtsc\n\t"
+                    "movl %%edx, %0\n\t"
+                    "movl %%eax, %1\n\t"
+                    : "=r" (start_time_high), "=r" (start_time_low)
+                    : : "%eax", "%edx"
+                    );
+
+            commands[i].func(argc - 1, argv + 1, tf);
+
+            __asm __volatile (
+                    "rdtsc\n\t"
+                    "movl %%edx, %0\n\t"
+                    "movl %%eax, %1\n\t"
+                    : "=r" (end_time_high), "=r" (end_time_low)
+                    : : "%eax", "%edx"
+                    );
+
+            start = ((uint64_t)start_time_high << 32) | start_time_low;
+            end = ((uint64_t)end_time_high << 32) | end_time_low;
+            cprintf("%s cycles: %ld\n", cmd, end - start);
+            return 0;
+        }
+    }
+    if (found == 0) {
+        cprintf("command %s not found\n", cmd);
+        return -1;
+    }
+
+    cprintf("unexpected error\n");
+    return -1;
+}
+
+int mon_mapping(int argc, char **argv, struct Trapframe *tf) {
+    mapping_cmd cmd;
+    mapping_parse(argc, argv, &cmd);
+    mapping_execute(&cmd);
+    return 0;
+}
+
+static void mapping_parse(int argv, char **argc, mapping_cmd *cmd) {
+    assert(cmd);
+    if (argv <= 1) {
+        cprintf("option required\n");
+        mapping_help();
+        cmd->type = UNKNOWN;
+        return;
+    }
+    char *option = argc[1];
+    if (strcmp(option, "-h") == 0 || strcmp(option, "--help") == 0) {
+        cmd->type = HELP;
+        return;
+    }
+    if ((strcmp(option, "-s") == 0) || strcmp(option, "--show") == 0) {
+        cmd->type = DUMP;
+        cmd->start = 0x0;
+        cmd->end = ~0x0;
+        if (argv == 3) {
+            /* cmd->start = atoi(argc[2]); */
+        } else if (argv >= 4) {
+            /* cmd->start = atoi(argc[2]); */
+            /* cmd->end = atoi(argc[3]); */
+        }
+    } else {
+        cmd->type = UNKNOWN;
+    }
+}
+
+static void mapping_help() {
+    cprintf("mapping [option] [start_addr] [end_addr]\n");
+    cprintf("options: \n");
+    cprintf("\t-h | --help: show this help info\n");
+    cprintf("\t-s | --show: dump mapping info from start_addr to end_addr\n");
+}
+
+static void mapping_execute(mapping_cmd *cmd) {
+    assert(cmd && cmd->type);
+    switch (cmd->type) {
+        case HELP:
+            mapping_help();
+            break;
+        case DUMP:
+            mapping_dump(cmd->start, cmd->end);
+            break;
+        default:
+            cprintf("unknown option\n");
+            mapping_help();
+    }
+}
+
+static void mapping_dump(uintptr_t start, uintptr_t end) {
+
+}
+
 // Lab1 only
 // read the pointer to the retaddr on the stack
 static uint32_t
@@ -66,12 +197,142 @@ read_pretaddr() {
     return pretaddr;
 }
 
+static uint32_t read_ret_pointer(uint32_t ebp)
+{
+    uint32_t ret_pointer;
+    __asm __volatile(
+            "movl (%1), %0"
+            : "=r" (ret_pointer)
+            : "r" (ebp + 4)
+            );
+    return ret_pointer;
+}
+
+static uint32_t
+read_prev_ebp(uint32_t curr_ebp)
+{
+    uint32_t prev_ebp;
+    __asm __volatile(
+            "movl (%1), %0"
+            : "=r" (prev_ebp)
+            : "r" (curr_ebp)
+            );
+    return prev_ebp;
+}
+
+static uint32_t
+read_parameter(uint32_t ebp, uint32_t offset)
+{
+    uint32_t param;
+    __asm __volatile(
+            "movl (%1), %0"
+            : "=r" (param)
+            : "r" (ebp + offset)
+            );
+    return param;
+}
+
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
-    cprintf("Backtrace success\n");
+    cprintf("Stack backtrace:\n");
+    uint32_t ebp = read_ebp();
+    uint32_t eip = read_eip();
+    while (ebp != 0x0) {
+        struct Eipdebuginfo info = {
+            "unknow", 0, "unknow", 7, 0, 0
+        };
+        int result = debuginfo_eip(eip, &info);
+
+        cprintf("eip %08x ebp %08x args %08x %08x %08x %08x %08x\n",
+                eip, ebp,
+                read_parameter(ebp, 8), read_parameter(ebp, 12), read_parameter(ebp, 16),
+                read_parameter(ebp, 20), read_parameter(ebp, 24)
+               );
+        cprintf("%s:%d: %s+%d\n", info.eip_file, info.eip_line,
+                info.eip_fn_name, eip - info.eip_fn_addr);
+        ebp = read_prev_ebp(ebp);
+        // get the prev eip
+        eip = read_ret_pointer(ebp) - 4;
+    }
 	return 0;
+}
+
+int
+mon_echo(int argc, char **argv, struct Trapframe *tf)
+{
+    for (int i = 1; i < argc; i++) {
+        cprintf(argv[i]);
+    }
+    cprintf("\n");
+    return 0;
+}
+
+int mon_c(int argc, char **argv, struct Trapframe *tf) {
+    tf->tf_eflags = tf->tf_eflags & (~FL_TF);
+    return -1;
+}
+
+int mon_si(int argc, char **argv, struct Trapframe *tf) {
+    tf->tf_eflags |= FL_TF;
+
+    cprintf("tf_eip=%08x\n", tf->tf_eip);
+    struct Eipdebuginfo info = {
+        "unknow", 0, "unknow", 7, 0, 0
+    };
+    int result = debuginfo_eip(tf->tf_eip, &info);
+    cprintf("%s:%d: %s+%d\n", info.eip_file, info.eip_line,
+            info.eip_fn_name, tf->tf_eip - info.eip_fn_addr);
+    return -1;
+}
+
+/*
+ * convert a string to an virtual address
+ * 0 on success
+ * -1 on fail
+ */
+static int string_to_addr(const char *str, int len, uintptr_t *address) {
+    uintptr_t addr = 0;
+    uintptr_t base = 16;
+    for (int i = 0; i < len; i++) {
+        char c = str[i];
+        addr *= base;
+        if (c >= '0' && c <= '9') {
+            addr = addr + (c - '0');
+        } else if (c >= 'a' && c <= 'f') {
+            addr += (c - 'a' + 10);
+        } else if (c >= 'A' && c <= 'F') {
+            addr += (c - 'A' + 10);
+        } else {
+            return -1;
+        }
+    }
+    *address = addr;
+    return 0;
+}
+/*
+ * display the memory
+ * print the 4-byte data in the given address
+ */
+int mon_x(int argc, char **argv, struct Trapframe *tf) {
+    if (argc != 2) {
+        cprintf("Usage: x [address]\n");
+        cprintf("\taddress: hexadecimal number, e.g 0x12003400\n");
+        /* ?? */
+        return 0;
+    }
+    uintptr_t addr;
+    char *str = argv[1];
+    if (str[0] == '0' && str[1] == 'x') {
+        str += 2;
+    }
+    if (string_to_addr(str, strlen(str), &addr) < 0) {
+        cprintf("string %s is not a valid address\n", argv[1]);
+        return 0;
+    }
+    cprintf("%u\n", *(uint32_t *)addr);
+    return 0;
 }
 
 
