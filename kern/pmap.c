@@ -492,7 +492,13 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
     assert(va % PGSIZE == 0);
     assert(size % PGSIZE == 0);
     pte_t *entry;
-    for (uintptr_t addr = va; addr < va + size; addr += PGSIZE) {
+    size_t max_addr;
+    if (VMTOP - va < size) {
+        max_addr = VMTOP;
+    } else {
+        max_addr = va + size;
+    }
+    for (uintptr_t addr = va; addr < max_addr; addr += PGSIZE) {
         entry = pgdir_walk(pgdir, (void *)addr, 1);
         (*entry) = ((pa + (addr - va)) | perm | PTE_P);
     }
@@ -513,15 +519,21 @@ static void
 boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     pde_t *dir_entry;
-    for (uint32_t offset = 0; offset < size; offset += PTSIZE) {
-        dir_entry = pgdir + PDX(va + offset);
+    size_t max_addr;
+    if (VMTOP - va < size) {
+        max_addr = VMTOP;
+    } else {
+        max_addr = va + size;
+    }
+    for (uint32_t addr = 0; addr < max_addr; addr += PTSIZE) {
+        dir_entry = pgdir + PDX(addr);
         /* if (!dir_entry) { */
         /*     panic("boot_map_region_large: unknown error"); */
         /* } */
         /* if (*dir_entry & PTE_P) { */
         /*     cprintf("boot_map_region_large: overwrite used page!\n"); */
         /* } */
-        (*dir_entry) = (pa + offset) | perm | PTE_P | PTE_PS;
+        (*dir_entry) = (pa + addr - va) | perm | PTE_P | PTE_PS;
     }
 }
 

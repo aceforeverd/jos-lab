@@ -85,6 +85,7 @@
  *     at UTEMP.
  */
 
+#define VMTOP 0xFFFFFFFF
 
 // All physical memory mapped at this address
 #define	KERNBASE	0xF0000000
