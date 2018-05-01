@@ -90,10 +90,6 @@ trap_init(void)
 void
 trap_init_percpu(void)
 {
-    extern void sysenter_handler();
-    wrmsr(0x174, GD_KT, 0); /* SYSENTER_CS_MSR */
-    wrmsr(0x175, KSTACKTOP, 0);	/* SYSENTER_ESP_MSR */
-    wrmsr(0x176, (uint32_t)sysenter_handler, 0);		/* SYSENTER_EIP_MSR */
 	// The example code here sets up the Task State Segment (TSS) and
 	// the TSS descriptor for CPU 0. But it is incorrect if we are
 	// running on other CPUs because each CPU has its own kernel stack.
@@ -116,23 +112,39 @@ trap_init_percpu(void)
 	// user space on that CPU.
 	//
 	// LAB 4: Your code here:
+    int i = thiscpu->cpu_id;
+
+    extern void sysenter_handler();
+    wrmsr(0x174, GD_KT, 0); /* SYSENTER_CS_MSR */
+    wrmsr(0x175, KSTACKTOP - i *(KSTKSIZE + KSTKGAP), 0);	/* SYSENTER_ESP_MSR */
+    wrmsr(0x176, (uint32_t)sysenter_handler, 0);		/* SYSENTER_EIP_MSR */
+
+    cpus[i].cpu_ts.ts_esp0 = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+    cpus[i].cpu_ts.ts_ss0 = GD_KD;
+
+    gdt[(GD_TSS0 >> 3) + i] = SEG16(STS_T32A, (uint32_t) (&cpus[i].cpu_ts),
+            sizeof(struct Taskstate), 0);
+    gdt[(GD_TSS0 >> 3) + i].sd_s = 0;
+
+    ltr(GD_TSS0 + (i << 3));
+    lidt(&idt_pd);
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	ts.ts_esp0 = KSTACKTOP;
-	ts.ts_ss0 = GD_KD;
+	/* ts.ts_esp0 = KSTACKTOP; */
+	/* ts.ts_ss0 = GD_KD; */
 
 	// Initialize the TSS slot of the gdt.
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
-					sizeof(struct Taskstate), 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+	/* gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts), */
+	/* 				sizeof(struct Taskstate), 0); */
+	/* gdt[GD_TSS0 >> 3].sd_s = 0; */
 
 	// Load the TSS selector (like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	ltr(GD_TSS0);
+	/* ltr(GD_TSS0); */
 
 	// Load the IDT
-	lidt(&idt_pd);
+	/* lidt(&idt_pd); */
 }
 
 void

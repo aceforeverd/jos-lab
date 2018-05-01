@@ -483,18 +483,19 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     }
     second_page_table = KADDR(PTE_ADDR(*page_table));
     pte_t *entry = second_page_table + PTX(va);
-    /* check page table entry permissions */
-    if (! (*entry & PTE_P)) {
-        if (!create) {
-            return NULL;
-        }
+    /*
+     * if (! (*entry & PTE_P)) {
+     *     if (!create) {
+     *         return NULL;
+     *     }
 
-        struct Page *np = (struct Page *) page_alloc(ALLOC_ZERO);
-        if (!np) {
-            return NULL;
-        }
-        np->pp_ref = 1;
-    }
+     *     struct Page *np = (struct Page *) page_alloc(ALLOC_ZERO);
+     *     if (!np) {
+     *         return NULL;
+     *     }
+     *     np->pp_ref = 1;
+     * }
+     */
     return entry;
 }
 
