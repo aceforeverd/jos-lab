@@ -227,7 +227,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region_large(kern_pgdir, KERNBASE, -KERNBASE, 0, PTE_W);
+    boot_map_region_large(kern_pgdir, KERNBASE, IOMEMBASE - KERNBASE, 0, PTE_W);
 
 	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
@@ -292,7 +292,7 @@ mem_init_mp(void)
 	// LAB 4: Your code here:
     for (int i = 0; i < NCPU; i++) {
         boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE,
-                (physaddr_t) (percpu_kstacks + i), PTE_W);
+                PADDR(percpu_kstacks[i]), PTE_W);
     }
 }
 
@@ -474,7 +474,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
         if (!p) {
             return NULL;
         }
-        p->pp_ref = 1;
+        p->pp_ref ++;
         *page_table = page2pa(p) | PTE_P | PTE_U | PTE_W;
     } else {
         if (*page_table & PTE_PS) {
@@ -512,8 +512,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-    assert(va % PGSIZE == 0);
-    assert(size % PGSIZE == 0);
     pte_t *entry;
     size_t max_size;
     if (VMTOP - va < size) {
