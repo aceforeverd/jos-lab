@@ -291,7 +291,8 @@ mem_init_mp(void)
 	//
 	// LAB 4: Your code here:
     for (int i = 0; i < NCPU; i++) {
-        boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, (physaddr_t) (percpu_kstacks + i), PTE_W);
+        boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE,
+                (physaddr_t) (percpu_kstacks + i), PTE_W);
     }
 }
 
@@ -465,21 +466,34 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     /* check page directory entry permissions */
     if (! (*page_table & PTE_P)) {
         /* page directory entry not exist */
-        if (create) {
-            struct Page *p = (struct Page *) page_alloc(ALLOC_ZERO);
-            if (!p) {
-                return NULL;
-            }
-            p->pp_ref = 1;
-            *page_table = page2pa(p) | PTE_P | PTE_U | PTE_W;
-        } else {
+        if (!create) {
             return NULL;
+        }
+
+        struct Page *p = (struct Page *) page_alloc(ALLOC_ZERO);
+        if (!p) {
+            return NULL;
+        }
+        p->pp_ref = 1;
+        *page_table = page2pa(p) | PTE_P | PTE_U | PTE_W;
+    } else {
+        if (*page_table & PTE_PS) {
+            return page_table;
         }
     }
     second_page_table = KADDR(PTE_ADDR(*page_table));
     pte_t *entry = second_page_table + PTX(va);
     /* check page table entry permissions */
     if (! (*entry & PTE_P)) {
+        if (!create) {
+            return NULL;
+        }
+
+        struct Page *np = (struct Page *) page_alloc(ALLOC_ZERO);
+        if (!np) {
+            return NULL;
+        }
+        np->pp_ref = 1;
     }
     return entry;
 }
