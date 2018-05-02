@@ -24,6 +24,15 @@ static struct Page *chunk_list;
 
 extern struct Env *envs;
 
+static void invalid_page(pde_t *pgdir, uintptr_t va, size_t size) {
+    assert(va % PGSIZE == 0);
+    assert(size % PGSIZE == 0);
+    for (uintptr_t addr = va; addr < va + size; addr += PGSIZE) {
+        pte_t *entry = pgdir_walk(pgdir, (void*) addr, 1);
+        *entry = 0;
+    }
+}
+
 // --------------------------------------------------------------
 // Detect machine's physical memory setup.
 // --------------------------------------------------------------
@@ -218,6 +227,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
     boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+    invalid_page(kern_pgdir, KSTACKTOP - KSTKSIZE - KSTKGAP, KSTKGAP);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -293,6 +303,7 @@ mem_init_mp(void)
     for (int i = 0; i < NCPU; i++) {
         boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE,
                 PADDR(percpu_kstacks[i]), PTE_W);
+        invalid_page(kern_pgdir, KSTACKTOP - (i + 1) * (KSTKSIZE + KSTKGAP), KSTKGAP);
     }
 }
 
