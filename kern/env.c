@@ -369,20 +369,18 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
     ph = (struct Proghdr *) (binary + elf->e_phoff);
     eph = ph + elf->e_phnum;
     for (; ph < eph; ph ++) {
-        if (ph->p_type != ELF_PROG_LOAD) {
-            cprintf("ph->p_type is not ELF_PROG_LOAD\n");
-            continue;
+        if (ph->p_type == ELF_PROG_LOAD) {
+            if (ph->p_filesz > ph->p_memsz) {
+                cprintf("ph->p_filesz is larger than ph->p_memsz\n");
+                continue;
+            }
+            if (ph->p_va + ph->p_memsz > e->env_break) {
+                e->env_break = (uintptr_t) ROUNDUP(ph->p_va + ph->p_memsz, PGSIZE);
+            }
+            region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+            memmove((void *) ph->p_va, binary + ph->p_offset, ph->p_filesz);
+            memset((void *) (ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
         }
-        if (ph->p_filesz > ph->p_memsz) {
-            cprintf("ph->p_filesz is larger than ph->p_memsz\n");
-            continue;
-        }
-        if (ph->p_va + ph->p_memsz > e->env_break) {
-            e->env_break = (uintptr_t) ROUNDUP(ph->p_va + ph->p_memsz, PGSIZE);
-        }
-        region_alloc(e, (void *)ph->p_va, ph->p_memsz);
-        memmove((void *) ph->p_va, binary + ph->p_offset, ph->p_filesz);
-        memset((void *) (ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
     }
     e->env_tf.tf_eip = elf->e_entry;
 
@@ -554,6 +552,7 @@ env_run(struct Env *e)
     }
     env_pop_tf(&curenv->env_tf);
 
+    unlock_kernel();
 }
 
 

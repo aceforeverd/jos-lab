@@ -1,3 +1,13 @@
 1. what is the purpose of macro MPBOOTPHYS in kern/mpentry.S ?
+
    MPBOOTPHYS returns the absolute address of a symbol. Without it, it may go to wrong address
    because link address varies with actual load address.
+
+
+2. It seems that using the big kernel lock guarantees that only one CPU can run the kernel code at a time.
+
+   Why do we still need separate kernel stacks for each CPU?
+   Describe a scenario in which using a shared kernel stack will go wrong, even with the protection of the big kernel lock.
+   Vulnerable code will likely to damage or leak process info runing on other CPU.
+   E.g. the registers of one process was pushed into kernel stack during switching to kernel mode, whic may leak to other process
+   when switch back to user mode.

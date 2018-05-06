@@ -257,11 +257,13 @@ trap(struct Trapframe *tf)
 
 	cprintf("Incoming TRAP frame at %p\n", tf);
 
-	if ((tf->tf_cs & 3) == 3) {
+	if ((tf->tf_cs & DPL_USER) == DPL_USER) {
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+        lock_kernel();
+
 		assert(curenv);
 
 		// Garbage collect if current enviroment is a zombie
