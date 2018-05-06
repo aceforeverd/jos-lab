@@ -11,3 +11,12 @@
    Vulnerable code will likely to damage or leak process info runing on other CPU.
    E.g. the registers of one process was pushed into kernel stack during switching to kernel mode, whic may leak to other process
    when switch back to user mode.
+
+3. In your implementation of env_run() you should have called lcr3(). Before and after the call to lcr3(),
+   your code makes references (at least it should) to the variable e, the argument to env_run.
+   Upon loading the %cr3 register, the addressing context used by the MMU is instantly changed. But a virtual 
+   address (namely e) has meaning relative to a given address context--the address context specifies the 
+   physical address to which the virtual address maps. Why can the pointer e be dereferenced both before and
+   after the addressing switch?
+
+   all envs are in const positions above UTOP/UENVS
