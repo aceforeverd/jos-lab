@@ -94,9 +94,18 @@ sys_exofork(void)
 	// status is set to ENV_NOT_RUNNABLE, and the register set is copied
 	// from the current environment -- but tweaked so sys_exofork
 	// will appear to return 0.
+    struct Env *new_env;
+    envid_t id = env_alloc(&new_env, curenv->env_id);
+    if (id < 0) {
+        return id;
+    }
+    new_env->env_status = ENV_NOT_RUNNABLE;
+    new_env->env_tf = curenv->env_tf;
+    new_env->env_tf.tf_regs.reg_eax = 0;
+    return new_env->env_id;
 
 	// LAB 4: Your code here.
-	panic("sys_exofork not implemented");
+
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE
@@ -303,8 +312,31 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             return sys_getenvid();
         case SYS_env_destroy:
             return sys_env_destroy(a1);
+
         case SYS_map_kernel_page:
             return sys_map_kernel_page((void *) a1, (void *) a2);
+
+        case SYS_page_alloc:
+            return sys_page_alloc(a1, (void *)a2, a3);
+        case SYS_page_map:
+            return sys_page_map(a1, (void *) a2, a3, (void *) a4, a5);
+        case SYS_page_unmap:
+            return sys_page_unmap(a1, (void *) a2);
+        case SYS_exofork:
+            return sys_exofork();
+        case SYS_env_set_status:
+            return sys_env_set_status(a1, a2);
+        case SYS_env_set_pgfault_upcall:
+            return sys_env_set_pgfault_upcall(a1, (void *) a2);
+        case SYS_yield:
+            curenv->env_tf.tf_regs.reg_eax = 0;
+            sys_yield();
+            return;
+        case SYS_ipc_try_send:
+            return sys_ipc_try_send(a1, a2, (void *) a3, a4);
+        case SYS_ipc_recv:
+            return sys_ipc_recv((void *) a1);
+
         case SYS_sbrk:
             return sys_sbrk(a1);
         default:
