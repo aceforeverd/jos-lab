@@ -214,9 +214,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
         return -E_INVAL;
     }
 
-    int other = ~(PTE_U | PTE_P | PTE_AVAIL | PTE_W);
-    if ( ((perm & (PTE_U & PTE_P)) != (PTE_U | PTE_P)) ||
-            ((perm & other) != 0) ) {
+    if (!check_perm(perm)) {
         return -E_INVAL;
     }
 
