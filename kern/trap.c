@@ -30,6 +30,7 @@ struct Pseudodesc idt_pd = {
 	sizeof(idt) - 1, (uint32_t) idt
 };
 extern unsigned int vectors[];  // array of 256 entry points
+extern unsigned int irq_handlers[];
 
 
 static const char *trapname(int trapno)
@@ -82,6 +83,9 @@ trap_init(void)
     }
     /* SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER); */
 
+    for (int i = 0; i < 16; i++) {
+        SETGATE(idt[i + IRQ_OFFSET], 0, GD_KT, irq_handlers[i], 0);
+    }
 	// Per-CPU setup 
 	trap_init_percpu();
 }

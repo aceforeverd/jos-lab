@@ -70,6 +70,23 @@
  TRAPHANDLER_NOEC(handler18, T_MCHK)
  TRAPHANDLER_NOEC(handler19, T_SIMDERR)
 
+ TRAPHANDLER_NOEC(irq_handler0, IRQ_OFFSET)
+ TRAPHANDLER_NOEC(irq_handler1, IRQ_OFFSET + 1)
+ TRAPHANDLER_NOEC(irq_handler2, IRQ_OFFSET + 2)
+ TRAPHANDLER_NOEC(irq_handler3, IRQ_OFFSET + 3)
+ TRAPHANDLER_NOEC(irq_handler4, IRQ_OFFSET + 4)
+ TRAPHANDLER_NOEC(irq_handler5, IRQ_OFFSET + 5)
+ TRAPHANDLER_NOEC(irq_handler6, IRQ_OFFSET + 6)
+ TRAPHANDLER_NOEC(irq_handler7, IRQ_OFFSET + 7)
+ TRAPHANDLER_NOEC(irq_handler8, IRQ_OFFSET + 8)
+ TRAPHANDLER_NOEC(irq_handler9, IRQ_OFFSET + 9)
+ TRAPHANDLER_NOEC(irq_handler10, IRQ_OFFSET + 10)
+ TRAPHANDLER_NOEC(irq_handler11, IRQ_OFFSET + 11)
+ TRAPHANDLER_NOEC(irq_handler12, IRQ_OFFSET + 12)
+ TRAPHANDLER_NOEC(irq_handler13, IRQ_OFFSET + 13)
+ TRAPHANDLER_NOEC(irq_handler14, IRQ_OFFSET + 14)
+ TRAPHANDLER_NOEC(irq_handler15, IRQ_OFFSET + 15)
+
 
 .globl sysenter_handler;
 .type sysenter_handler, @function;
@@ -141,3 +158,23 @@ _trapret:
 	.long handler17
 	.long handler18
 	.long handler19
+
+
+.global irq_handlers
+irq_handlers:
+    .long irq_hander0
+    .long irq_hander1
+    .long irq_hander2
+    .long irq_hander3
+    .long irq_hander4
+    .long irq_hander5
+    .long irq_hander6
+    .long irq_hander7
+    .long irq_hander8
+    .long irq_hander9
+    .long irq_hander10
+    .long irq_hander11
+    .long irq_hander12
+    .long irq_hander13
+    .long irq_hander14
+    .long irq_hander15

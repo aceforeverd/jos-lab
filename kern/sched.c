@@ -36,15 +36,15 @@ sched_yield(void)
     }
     for (i = current_id + 1; i < current_id + NENV; i++) {
         envid_t index = i % NENV;
-        if (envs[i].env_status == ENV_RUNNABLE && envs[i].env_type != ENV_TYPE_IDLE) {
+        if (envs[index].env_status == ENV_RUNNABLE && envs[index].env_type != ENV_TYPE_IDLE) {
             /* switch to this env */
             env_run(envs + index);
             return;
         }
     }
     /* no other envs runnable */
-    if (curenv->env_status == ENV_RUNNING) {
-        env_run(curenv);
+    if (envs[current_id].env_status == ENV_RUNNING) {
+        env_run(&envs[current_id]);
         return;
     }
 
