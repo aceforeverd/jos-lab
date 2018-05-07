@@ -348,7 +348,7 @@ page_init(void)
     pages[0].pp_link = NULL;
     int grap = MPENTRY_PADDR / PGSIZE;
 	for (i = 1; i < npages_basemem; i++) {
-        if (i >= grap) {
+        if (i == grap) {
             pages[i].pp_ref = 1;
             pages[i].pp_link = NULL;
         } else {
