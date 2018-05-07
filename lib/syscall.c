@@ -11,12 +11,12 @@ syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
         asm volatile (
                 "int %1"
                 : "=a" (ret)
-                : "i" (T_SYSCALL)
-                  "a" (num)
-                  "b" (a1)
-                  "c" (a2)
-                  "d" (a3)
-                  "S" (a4)
+                : "i" (T_SYSCALL),
+                  "a" (num),
+                  "b" (a1),
+                  "c" (a2),
+                  "d" (a3),
+                  "S" (a4),
                   "D" (a5)
                 );
     } else {
