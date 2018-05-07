@@ -7,38 +7,53 @@ static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
     int32_t ret;
-    asm volatile(
-            "pushl %%ecx\n\t"
-            "pushl %%edx\n\t"
-            "pushl %%ebx\n\t"
-            "pushl %%esp\n\t"
-            "pushl %%ebp\n\t"
-            "pushl %%esi\n\t"
-            "pushl %%edi\n\t"
+    if (a5) {
+        asm volatile (
+                "int %1"
+                : "=a" (ret)
+                : "i" (T_SYSCALL)
+                  "a" (num)
+                  "b" (a1)
+                  "c" (a2)
+                  "d" (a3)
+                  "S" (a4)
+                  "D" (a5)
+                );
+    } else {
+        asm volatile(
+                "pushl %%ecx\n\t"
+                "pushl %%edx\n\t"
+                "pushl %%ebx\n\t"
+                "pushl %%esp\n\t"
+                "pushl %%ebp\n\t"
+                "pushl %%esi\n\t"
+                "pushl %%edi\n\t"
 
-            // lab 3
-            "pushl %%esp\n\t"
-            "popl %%ebp\n\t"
-            "leal ase%=, %%esi\n\t"
-            "sysenter\n\t"
+                // lab 3
+                "pushl %%esp\n\t"
+                "popl %%ebp\n\t"
+                "leal ase%=, %%esi\n\t"
+                "sysenter\n\t"
 
-            "ase%=:\n\t"
+                "ase%=:\n\t"
 
-            "popl %%edi\n\t"
-            "popl %%esi\n\t"
-            "popl %%ebp\n\t"
-            "popl %%esp\n\t"
-            "popl %%ebx\n\t"
-            "popl %%edx\n\t"
-            "popl %%ecx\n\t"
+                "popl %%edi\n\t"
+                "popl %%esi\n\t"
+                "popl %%ebp\n\t"
+                "popl %%esp\n\t"
+                "popl %%ebx\n\t"
+                "popl %%edx\n\t"
+                "popl %%ecx\n\t"
 
-            : "=a" (ret)
-            : "a" (num),
-            "d" (a1),
-            "c" (a2),
-            "b" (a3),
-            "D" (a4)
-            : "cc", "memory");
+                : "=a" (ret)
+                : "a" (num),
+                "d" (a1),
+                "c" (a2),
+                "b" (a3),
+                "D" (a4)
+                       : "cc", "memory");
+
+    }
 
 
 	if(check && ret > 0)
