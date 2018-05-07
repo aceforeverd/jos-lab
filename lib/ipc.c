@@ -35,7 +35,7 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
         if (perm_store) {
             *perm_store = 0;
         }
-        return r;
+        return ret;
     }
 
     if (from_env_store) {
@@ -64,7 +64,7 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
     }
     int r;
     while((r = sys_ipc_try_send(to_env, val, pg, perm)) == -E_IPC_NOT_RECV) {
-        sched_yield();
+        sys_yield();
     }
 
     if (r < 0) {
