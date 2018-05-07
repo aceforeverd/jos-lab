@@ -81,7 +81,9 @@ trap_init(void)
             SETGATE(idt[i], 0, GD_KT, vectors[i], DPL_SUPER);
         }
     }
-    /* SETGATE(idt[T_SYSCALL], 1, GD_KD, vectors[T_SYSCALL], DPL_USER); */
+
+    extern unsigned long syscall_handler;
+    SETGATE(idt[T_SYSCALL], 0, GD_KD, syscall_handler, DPL_USER);
 
     for (int i = 0; i < 16; i++) {
         SETGATE(idt[i + IRQ_OFFSET], 0, GD_KT, irq_handlers[i], 0);
@@ -247,6 +249,7 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_cs == GD_KT)
 		panic("unhandled trap in kernel");
 	else {
+        cprintf("I do not know this trap\n");
 		env_destroy(curenv);
 		return;
 	}
