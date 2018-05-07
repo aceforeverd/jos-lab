@@ -29,7 +29,9 @@ static void invalid_page(pde_t *pgdir, uintptr_t va, size_t size) {
     assert(size % PGSIZE == 0);
     for (uintptr_t addr = va; addr < va + size; addr += PGSIZE) {
         pte_t *entry = pgdir_walk(pgdir, (void*) addr, 1);
-        *entry = 0;
+        if (entry) {
+            *entry = 0;
+        }
     }
 }
 

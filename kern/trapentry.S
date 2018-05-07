@@ -96,14 +96,21 @@ sysenter_handler:
 /*
  * Lab 3: Your code here for system call handling
  */
- pushl %edi
- pushl %ebx
- pushl %ecx
- pushl %edx
- pushl %eax
- call syscall
+pushl $GD_UD|3
+pushl %ebp
+pushfl
+pushl $GD_UT|3
+pushl %esi
+pushl $0
+pushl $T_SYSCALL
+pushl %ds
+pushl %es
+pushal
+pushl %esp
+call syscall_tf
  movl %ebp, %ecx
  movl %esi, %edx
+ sti
  sysexit
 
 

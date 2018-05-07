@@ -501,3 +501,18 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     return -E_INVAL;
 }
 
+
+int32_t
+syscall_tf(struct Trapframe *tf) {
+  int32_t res;
+  lock_kernel();
+  curenv->env_tf = *tf;
+  res = syscall(tf->tf_regs.reg_eax,
+                tf->tf_regs.reg_edx,
+                tf->tf_regs.reg_ecx,
+                tf->tf_regs.reg_ebx,
+                tf->tf_regs.reg_edi,
+                0);
+  unlock_kernel();
+  return res;
+}
