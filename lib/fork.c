@@ -24,7 +24,15 @@ pgfault(struct UTrapframe *utf)
 	//   Use the read-only page table mappings at vpt
 	//   (see <inc/memlayout.h>).
 
-	// LAB 4: Your code here.
+    if (!(err & FEC_WR)) {
+        panic("error code do not have FEC_WR\n");
+    }
+
+    pde_t d = vpd[PDX(addr)];
+    pte_t t = vpt[PGNUM(addr)];
+    if (!(d & PTE_P) || !(t & PTE_COW) || !(t & PTE_P)) {
+        panic("%xis not a copy on write page", addr);
+    }
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -34,8 +42,19 @@ pgfault(struct UTrapframe *utf)
 	//   No need to explicitly delete the old page's mapping.
 
 	// LAB 4: Your code here.
+    r = sys_page_alloc(0, PFTEMP,  PTE_P | PTE_U | PTE_W);
+    if (r < 0) {
+        panic("pgfault.sys_page_alloc: %e", r);
+    }
+    memmove(PFTEMP, addr, PGSIZE);
 
-	panic("pgfault not implemented");
+    if ((r = sys_page_map(0, PFTEMP, 0, addr, PTE_P | PTE_W | PTE_U)) < 0) {
+        panic("pgfault.sys_page_map: %e", r);
+    }
+
+    if ((r = sys_page_unmap(0, PFTEMP)) < 0) {
+        panic("pgfault.sys_page_unmap: %e", r);
+    }
 }
 
 //
@@ -53,9 +72,34 @@ static int
 duppage(envid_t envid, unsigned pn)
 {
 	int r;
+    int perm;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+    uintptr_t addr = pn * PGSIZE;
+    perm = PTE_P | PTE_U;
+    pde_t pde = vpd[PDX(addr)];
+    pte_t pte = vpt[PGNUM(addr)];
+    if (!(pde & PTE_P) || !(pte & PTE_P)) {
+        /* return silently */
+        return 0;
+    }
+
+    if ((pte & PTE_W) || (pte & PTE_COW) ) {
+        perm |= PTE_COW;
+    }
+
+    if ((r = sys_page_map(0, (void *)addr, envid, (void *)addr, perm)) < 0) {
+        return r;
+    }
+
+    if (!(perm & PTE_COW)) {
+        return 0;
+    }
+
+    if ((r = sys_page_map(0, (void *)addr, 0, (void *)addr, perm)) < 0) {
+        return r;
+    }
+
 	return 0;
 }
 
@@ -79,7 +123,39 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+    set_pgfault_handler(pgfault);
+
+    envid_t child = sys_exofork();
+    if (child < 0) {
+        return child;
+    }
+
+    if (child == 0) {
+        /* child */
+        thisenv = envs + ENVX(sys_getenvid());
+        return 0;
+    }
+
+    int r;
+    for (uintptr_t addr = 0; addr < UTOP - PGSIZE; addr += PGSIZE) {
+        if ((r = duppage(child, addr / PGSIZE)) < 0) {
+            panic("fork.duppage: %e", r);
+        }
+    }
+
+    if ((r = sys_page_alloc(child, (void *) (UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P )) < 0) {
+        panic("exception stack allocation failed: %e", r);
+    }
+
+    extern void _pgfault_upcall(void);
+    if ((r = sys_env_set_pgfault_upcall(child, _pgfault_upcall)) < 0) {
+        panic("set pgfault upcall: %e", r);
+    }
+
+    if ((r = sys_env_set_status(child, ENV_RUNNABLE)) < 0) {
+        panic("set child runnable: %e", r);
+    }
+    return child;
 }
 
 // Challenge!
