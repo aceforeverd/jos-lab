@@ -19,12 +19,8 @@ static int check_addr(void *addr) {
 
 static int check_perm(int perm) {
     int other = ~PTE_SYSCALL;
-    if ( ((perm & (PTE_U & PTE_P)) != (PTE_U | PTE_P)) ||
-            ((perm & other) != 0) ) {
-        /* -E_INVAL */
-        return 0;
-    }
-    return 1;
+    int normal = (PTE_U | PTE_P);
+    return ((perm & normal) == normal) && ((perm & other) == 0);
 }
 
 static int check_env(struct Env *e) {
