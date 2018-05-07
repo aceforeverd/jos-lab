@@ -162,19 +162,19 @@ _trapret:
 
 .global irq_handlers
 irq_handlers:
-    .long irq_hander0
-    .long irq_hander1
-    .long irq_hander2
-    .long irq_hander3
-    .long irq_hander4
-    .long irq_hander5
-    .long irq_hander6
-    .long irq_hander7
-    .long irq_hander8
-    .long irq_hander9
-    .long irq_hander10
-    .long irq_hander11
-    .long irq_hander12
-    .long irq_hander13
-    .long irq_hander14
-    .long irq_hander15
+    .long irq_handler0
+    .long irq_handler1
+    .long irq_handler2
+    .long irq_handler3
+    .long irq_handler4
+    .long irq_handler5
+    .long irq_handler6
+    .long irq_handler7
+    .long irq_handler8
+    .long irq_handler9
+    .long irq_handler10
+    .long irq_handler11
+    .long irq_handler12
+    .long irq_handler13
+    .long irq_handler14
+    .long irq_handler15
