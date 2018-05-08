@@ -55,7 +55,7 @@ holding(struct spinlock *lock)
 	return lock->locked && lock->cpu == thiscpu;
 #else
 	//LAB 4: Your code here
-    return thiscpu == lock->cpu;
+    return thiscpu == lock->cpu && lock->next == lock->own;
 
 #endif
 }
@@ -99,9 +99,10 @@ spin_lock(struct spinlock *lk)
 		asm volatile ("pause");
 #else
 	//LAB 4: Your code here
-    unsigned my_own = atomic_return_and_add(&lk->own, 1);
-    while (lk->next != my_own) {}
-    asm volatile ("pause\n\t");
+    unsigned my_next = atomic_return_and_add(&(lk->next), 1);
+    while (lk->own != my_next) {
+        asm volatile ("pause\n\t");
+    }
 
 #endif
 
@@ -154,6 +155,6 @@ spin_unlock(struct spinlock *lk)
 	xchg(&lk->locked, 0);
 #else
 	//LAB 4: Your code here
-    atomic_return_and_add(&lk->next, 1);
+    atomic_return_and_add(&(lk->own), 1);
 #endif
 }
