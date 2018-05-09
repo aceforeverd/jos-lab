@@ -100,7 +100,7 @@ spin_lock(struct spinlock *lk)
 #else
 	//LAB 4: Your code here
     unsigned my_next = atomic_return_and_add(&(lk->next), 1);
-    while (lk->own != my_next) {
+    while (atomic_return_and_add(&lk->own, 0) != my_next) {
         asm volatile ("pause\n\t");
     }
 

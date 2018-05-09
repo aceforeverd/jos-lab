@@ -9,6 +9,7 @@
 void
 sched_yield(void)
 {
+    envs_dump();
 	struct Env *idle;
 	int i;
 
@@ -30,12 +31,12 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
-    envid_t current_id = 0;
+    envid_t current_id = NCPU - 1;
     if (curenv) {
         current_id = curenv->env_id;
     }
     for (i = current_id + 1; i < current_id + NENV; i++) {
-        envid_t index = i % NENV;
+        envid_t index = i % NENV ;
         if (envs[index].env_status == ENV_RUNNABLE && envs[index].env_type != ENV_TYPE_IDLE) {
             /* switch to this env */
             env_run(envs + index);
@@ -43,7 +44,7 @@ sched_yield(void)
         }
     }
     /* no other envs runnable */
-    if (envs[current_id].env_status == ENV_RUNNING) {
+    if (envs[current_id].env_status == ENV_RUNNING && envs[current_id].env_type != ENV_TYPE_IDLE) {
         env_run(&envs[current_id]);
         return;
     }
@@ -51,6 +52,7 @@ sched_yield(void)
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
 	// drop into the kernel monitor.
+    // 0 to NCPU -1: idle envs
 	for (i = 0; i < NENV; i++) {
 		if (envs[i].env_type != ENV_TYPE_IDLE &&
 		    (envs[i].env_status == ENV_RUNNABLE ||
