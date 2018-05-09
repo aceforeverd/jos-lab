@@ -55,7 +55,7 @@ holding(struct spinlock *lock)
 	return lock->locked && lock->cpu == thiscpu;
 #else
 	//LAB 4: Your code here
-    return thiscpu == lock->cpu && lock->next == lock->own;
+    return thiscpu == lock->cpu;
 
 #endif
 }

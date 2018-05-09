@@ -29,7 +29,7 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	if (_pgfault_handler == 0) {
 		// First time through!
 		// LAB 4: Your code here.
-        int ret = sys_page_alloc(0, (void *) UXSTACKTOP - PGSIZE, PTE_W | PTE_U | PTE_P);
+        int ret = sys_page_alloc(0, (void *) (UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P);
         if (ret < 0) {
             panic("set_pgfault_handler: %e\n", ret);
         }
