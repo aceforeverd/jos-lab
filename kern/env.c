@@ -65,25 +65,30 @@ struct Pseudodesc gdt_pd = {
 void envs_dump() {
     struct Env *e;
     for (int i = 0; i < NENV; i ++) {
-        e = envs[i];
+        e = &envs[i];
         if (e->env_type == ENV_TYPE_USER) {
             cprintf("Type: user, ");
         } else {
             cprintf("Type: idle, ");
         }
 
-        cprintf("status: ")
+        cprintf("status: ");
         switch (e->env_status) {
             case ENV_FREE:
                 cprintf("free");
+                break;
             case ENV_DYING:
                 cprintf("dying");
+                break;
             case ENV_RUNNABLE:
                 cprintf("runnable");
+                break;
             case ENV_RUNNING:
                 cprintf("running");
+                break;
             case ENV_NOT_RUNNABLE:
-                cprintf("not runnable")
+                cprintf("not runnable");
+                break;
             default:
                 cprintf("invalid");
         }
