@@ -66,6 +66,12 @@ void envs_dump() {
     struct Env *e;
     for (int i = 0; i < NENV; i ++) {
         e = &envs[i];
+        if (!e) {
+            cprintf("empty env\n");
+            continue;
+        }
+
+        cprintf("id: %d\n", e->env_id);
         if (e->env_type == ENV_TYPE_USER) {
             cprintf("Type: user, ");
         } else {

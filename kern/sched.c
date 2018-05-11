@@ -9,7 +9,7 @@
 void
 sched_yield(void)
 {
-    envs_dump();
+    /* envs_dump(); */
 	struct Env *idle;
 	int i;
 

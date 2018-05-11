@@ -162,6 +162,50 @@ fork(void)
 int
 sfork(void)
 {
-	panic("sfork not implemented");
-	return -E_INVAL;
+    envid_t envid;
+    uintptr_t addr;
+    int r;
+
+    set_pgfault_handler(pgfault);
+
+    thisenv = NULL;
+
+    envid = sys_exofork();
+    if (envid < 0)
+        panic("sys_exofork: %e", envid);
+    if (envid == 0) {
+        return 0;
+    }
+
+    for (addr = 0; addr < UTOP; addr += PGSIZE) {
+        if (addr != UXSTACKTOP - PGSIZE && addr != USTACKTOP - PGSIZE) {
+            if ((vpd[PDX(addr)] & PTE_P) && (vpt[PGNUM(addr)] & PTE_P)) {
+                r = sys_page_map(0, (void *)addr, envid, (void *)addr, vpt[PGNUM(addr)] & PTE_SYSCALL);
+                if (r < 0)
+                    panic("sys_page_map: %e", r);
+            }
+        }
+    }
+
+    r = sys_page_alloc(envid, (void *)(UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P);
+    if (r < 0) {
+        panic("fork: exception stack allocation failed!");
+    }
+
+    r = duppage(envid, USTACKTOP / PGSIZE - 1);
+    if (r < 0) {
+        panic("fork: failed to duppage");
+    }
+
+    extern void _pgfault_upcall(void);
+    r = sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+    if (r < 0) {
+        panic("fork: set_pgfault_upcall failed!");
+    }
+
+    if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
+        panic("sys_env_set_status: %e", r);
+
+    return envid;
+    return -E_INVAL;
 }
