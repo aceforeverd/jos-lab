@@ -29,8 +29,6 @@ struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
 	sizeof(idt) - 1, (uint32_t) idt
 };
-extern unsigned int vectors[];  // array of 256 entry points
-extern unsigned int irq_handlers[];
 
 
 static const char *trapname(int trapno)
@@ -72,6 +70,8 @@ void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
+	extern unsigned int vectors[];  // array of 256 entry points
+	extern unsigned int irq_handlers[];
 
 	// LAB 3: Your code here.
     for (int i = 0; i < 20; i++) {
@@ -369,7 +369,7 @@ page_fault_handler(struct Trapframe *tf)
         struct UTrapframe *utf;
         if (tf->tf_esp >= USTACKTOP - PGSIZE && tf->tf_esp < USTACKTOP) {
             /* in user exception stack */
-            utf = (struct UTrapframe *) (tf->tf_esp - 4);
+            utf = (struct UTrapframe *) (tf->tf_esp - 8);
         } else {
             utf = (struct UTrapframe *) (UXSTACKTOP - 4);
         }
