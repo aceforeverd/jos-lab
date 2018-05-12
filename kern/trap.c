@@ -82,7 +82,7 @@ trap_init(void)
         }
     }
 
-    extern unsigned int syscall_handler;
+    extern void syscall_handler;
     SETGATE(idt[T_SYSCALL], 0, GD_KT, syscall_handler, DPL_USER);
 
     for (int i = 0; i < 16; i++) {
