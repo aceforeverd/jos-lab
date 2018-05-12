@@ -82,7 +82,7 @@ trap_init(void)
         }
     }
 
-    extern unsigned long syscall_handler;
+    extern unsigned int syscall_handler;
     SETGATE(idt[T_SYSCALL], 0, GD_KT, syscall_handler, DPL_USER);
 
     for (int i = 0; i < 16; i++) {
@@ -252,7 +252,6 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_cs == GD_KT)
 		panic("unhandled trap in kernel");
 	else {
-        cprintf("I do not know this trap\n");
 		env_destroy(curenv);
 		return;
 	}

@@ -119,12 +119,12 @@ call syscall_tf
  	# trap frame
  	pushl %ds
 	pushl %es
+	pushal
 
 	movw $(GD_KD), %ax
 	movw %ax, %ds
 	movw %ax, %es
 
-	pushal
 	pushl %esp
 	call trap
 
