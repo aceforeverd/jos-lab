@@ -93,9 +93,6 @@
 .type sysenter_handler, @function;
 .align 2;
 sysenter_handler:
-/*
- * Lab 3: Your code here for system call handling
- */
 pushl $GD_UD|3
 pushl %ebp
 pushfl
@@ -130,17 +127,6 @@ call syscall_tf
 	pushal
 	pushl %esp
 	call trap
-	addl $4, %esp
-
-.global _trapret
-_trapret:
-	popal
-	popl %gs
-	popl %fs
-	popl %es
-	popl %ds
-	addl $0x8, %esp # trap number and error code
-	iret
 
 
  .data
@@ -168,6 +154,7 @@ _trapret:
 	.long handler19
 
 
+.data
 .global irq_handlers
 irq_handlers:
     .long irq_handler0
