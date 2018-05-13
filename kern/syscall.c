@@ -175,6 +175,10 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
         /* -E_BAD_ENV */
         return ret;
     }
+    if (!func) {
+        cprintf("sys_env_set_pgfault_upcall: no function\n");
+        return 0;
+    }
 
     e->env_pgfault_upcall = func;
     return 0;

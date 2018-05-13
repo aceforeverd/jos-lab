@@ -216,14 +216,15 @@ trap_dispatch(struct Trapframe *tf)
             return;
         case T_PGFLT:
             page_fault_handler(tf);
+            cprintf("Registers after page-fault OK\n");
             return;
         case T_SYSCALL:
             tf->tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax,
-                    tf->tf_regs.reg_ebx,
-                    tf->tf_regs.reg_ecx,
-                    tf->tf_regs.reg_edx,
-                    tf->tf_regs.reg_esi,
-                    tf->tf_regs.reg_edi);
+            			                  tf->tf_regs.reg_ebx,
+										  tf->tf_regs.reg_ecx,
+			                              tf->tf_regs.reg_edx,
+			                              tf->tf_regs.reg_esi,
+			                              tf->tf_regs.reg_edi);
             return;
         default:
             break;
@@ -281,10 +282,7 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
-        lock_kernel();
-
-		assert(curenv);
-
+        lock_kernel(); assert(curenv); 
 		// Garbage collect if current enviroment is a zombie
 		if (curenv->env_status == ENV_DYING) {
 			env_free(curenv);
@@ -365,6 +363,7 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
     if (curenv->env_pgfault_upcall) {
+        cprintf("user fault va\n");
         struct UTrapframe *utf;
         if (tf->tf_esp >= USTACKTOP - PGSIZE && tf->tf_esp < USTACKTOP) {
             /* in user exception stack */
@@ -384,10 +383,9 @@ page_fault_handler(struct Trapframe *tf)
         tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
         tf->tf_esp = (uintptr_t)utf;
 
+        cprintf("Registers in UTrapframe OK\n");
         env_run(curenv);
     }
-    cprintf("Registers in UTrapframe OK\n");
-    cprintf("Registers after page-fault OK\n");
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",

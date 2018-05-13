@@ -31,9 +31,9 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
-    envid_t current_id = NCPU - 1;
+    envid_t current_id = 0;
     if (curenv) {
-        current_id = curenv->env_id;
+        current_id = ENVX(curenv->env_id);
     }
     for (i = current_id + 1; i < current_id + NENV; i++) {
         envid_t index = i % NENV ;

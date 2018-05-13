@@ -34,7 +34,7 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
             panic("set_pgfault_handler: %e\n", ret);
         }
 
-        if ((ret = sys_env_set_pgfault_upcall(0, _pgfault_handler)) < 0) {
+        if ((ret = sys_env_set_pgfault_upcall(0, _pgfault_upcall)) < 0) {
             panic("sys_env_set_pgfault_upcall: %e\n", ret);
         }
 	}
