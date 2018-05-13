@@ -219,11 +219,11 @@ trap_dispatch(struct Trapframe *tf)
             return;
         case T_SYSCALL:
             tf->tf_regs.reg_eax = syscall(tf->tf_regs.reg_eax,
-            			                  tf->tf_regs.reg_ebx,
-										  tf->tf_regs.reg_ecx,
-			                              tf->tf_regs.reg_edx,
-			                              tf->tf_regs.reg_esi,
-			                              tf->tf_regs.reg_edi);
+                    tf->tf_regs.reg_ebx,
+                    tf->tf_regs.reg_ecx,
+                    tf->tf_regs.reg_edx,
+                    tf->tf_regs.reg_esi,
+                    tf->tf_regs.reg_edi);
             return;
         default:
             break;
@@ -383,13 +383,18 @@ page_fault_handler(struct Trapframe *tf)
 
         tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
         tf->tf_esp = (uintptr_t)utf;
+
         env_run(curenv);
     }
+    cprintf("Registers in UTrapframe OK\n");
+    cprintf("Registers after page-fault OK\n");
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
 		curenv->env_id, fault_va, tf->tf_eip);
+    cprintf("i faulted at va %08x, err %d\n", fault_va, tf->tf_err);
 	print_trapframe(tf);
+    cprintf(".%08x. exiting gracefully\n", ENVX(curenv->env_id));
 	env_destroy(curenv);
 }
 
