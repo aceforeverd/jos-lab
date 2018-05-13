@@ -275,8 +275,6 @@ trap(struct Trapframe *tf)
 	// the interrupt path.
 	assert(!(read_eflags() & FL_IF));
 
-	cprintf("Incoming TRAP frame at %p\n", tf);
-
 	if ((tf->tf_cs & DPL_USER) == DPL_USER) {
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
@@ -364,6 +362,7 @@ page_fault_handler(struct Trapframe *tf)
 	// LAB 4: Your code here.
     if (curenv->env_pgfault_upcall) {
         cprintf("user fault va\n");
+        cprintf("this string was faulted in at %p", fault_va);
         struct UTrapframe *utf;
         if (tf->tf_esp >= USTACKTOP - PGSIZE && tf->tf_esp < USTACKTOP) {
             /* in user exception stack */
@@ -383,7 +382,7 @@ page_fault_handler(struct Trapframe *tf)
         tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
         tf->tf_esp = (uintptr_t)utf;
 
-        cprintf("Registers in UTrapframe OK\n");
+        cprintf(".%08x. exiting gracefully\n", ENVX(curenv->env_id));
         env_run(curenv);
     }
 
