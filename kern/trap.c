@@ -361,14 +361,12 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
     if (curenv->env_pgfault_upcall) {
-        cprintf("user fault va\n");
-        cprintf("this string was faulted in at %p", fault_va);
         struct UTrapframe *utf;
-        if (tf->tf_esp >= USTACKTOP - PGSIZE && tf->tf_esp < USTACKTOP) {
+        if (tf->tf_esp >= UXSTACKTOP - PGSIZE && tf->tf_esp < UXSTACKTOP) {
             /* in user exception stack */
-            utf = (struct UTrapframe *) (tf->tf_esp - 8);
+            utf = (struct UTrapframe *) (tf->tf_esp - 4) - 1;
         } else {
-            utf = (struct UTrapframe *) (UXSTACKTOP - 4);
+            utf = (struct UTrapframe *) UXSTACKTOP - 1;
         }
 
         user_mem_assert(curenv, utf, sizeof(*utf), PTE_W);
@@ -382,16 +380,13 @@ page_fault_handler(struct Trapframe *tf)
         tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
         tf->tf_esp = (uintptr_t)utf;
 
-        cprintf(".%08x. exiting gracefully\n", ENVX(curenv->env_id));
         env_run(curenv);
     }
 
 	// Destroy the environment that caused the fault.
 	cprintf("[%08x] user fault va %08x ip %08x\n",
 		curenv->env_id, fault_va, tf->tf_eip);
-    cprintf("i faulted at va %08x, err %d\n", fault_va, tf->tf_err);
 	print_trapframe(tf);
-    cprintf(".%08x. exiting gracefully\n", ENVX(curenv->env_id));
 	env_destroy(curenv);
 }
 
