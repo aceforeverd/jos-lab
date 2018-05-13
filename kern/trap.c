@@ -82,7 +82,7 @@ trap_init(void)
         }
     }
 
-    extern void syscall_handler;
+    extern void syscall_handler();
     SETGATE(idt[T_SYSCALL], 0, GD_KT, syscall_handler, DPL_USER);
 
     for (int i = 0; i < 16; i++) {
@@ -157,7 +157,7 @@ void
 print_trapframe(struct Trapframe *tf)
 {
 	// cprintf("TRAP frame at %p from CPU %d\n", tf, cpunum());
-	cprintf("TRAP frame at %p\n", tf);
+	cprintf("TRAP frame at %p from CPU %d\n", tf, cpunum());
     if ((tf->tf_cs & 3) == 0) {
         cprintf("kernel mode trap\n");
     } else {
