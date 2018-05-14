@@ -7,6 +7,10 @@
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
 
+static int has_entry(uintptr_t addr) {
+    return (vpd[PDX(addr)] & PTE_P) && (vpt[PGNUM(addr)] & PTE_P);
+}
+
 //
 // Custom page fault handler - if faulting page is copy-on-write,
 // map in our own private writable copy.
@@ -28,9 +32,7 @@ pgfault(struct UTrapframe *utf)
         panic("error code do not have FEC_WR\n");
     }
 
-    pde_t d = vpd[PDX(addr)];
-    pte_t t = vpt[PGNUM(addr)];
-    if (!(d & PTE_P) || !(t & PTE_COW) || !(t & PTE_P)) {
+    if (!(vpd[PDX(addr)] & PTE_P) || !(vpt[PGNUM(addr)] & PTE_COW) || !(vpt[PGNUM(addr)] & PTE_P)) {
         panic("%xis not a copy on write page", addr);
     }
 
@@ -77,7 +79,7 @@ duppage(envid_t envid, unsigned pn)
 	// LAB 4: Your code here.
     uintptr_t addr = pn * PGSIZE;
     perm = PTE_P | PTE_U;
-    if (!(vpd[PDX(addr)] & PTE_P) || !(vpt[pn] & PTE_P)) {
+    if (!has_entry(addr)) {
         /* return silently */
         return 0;
     }
@@ -160,27 +162,26 @@ fork(void)
 int
 sfork(void)
 {
-    envid_t envid;
-    uintptr_t addr;
     int r;
 
     set_pgfault_handler(pgfault);
 
     thisenv = NULL;
 
-    envid = sys_exofork();
+    envid_t envid = sys_exofork();
     if (envid < 0)
         panic("sys_exofork: %e", envid);
     if (envid == 0) {
         return 0;
     }
 
-    for (addr = 0; addr < UTOP; addr += PGSIZE) {
+    uintptr_t addr;
+    for (addr = 0; addr < UXSTACKTOP; addr += PGSIZE) {
         if (addr != UXSTACKTOP - PGSIZE && addr != USTACKTOP - PGSIZE) {
-            if ((vpd[PDX(addr)] & PTE_P) && (vpt[PGNUM(addr)] & PTE_P)) {
-                r = sys_page_map(0, (void *)addr, envid, (void *)addr, vpt[PGNUM(addr)] & PTE_SYSCALL);
-                if (r < 0)
+            if (has_entry(addr)) {
+                if ((r = sys_page_map(0, (void *)addr, envid, (void *)addr, vpt[PGNUM(addr)] & PTE_SYSCALL)) < 0) {
                     panic("sys_page_map: %e", r);
+                }
             }
         }
     }
