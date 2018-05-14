@@ -77,14 +77,12 @@ duppage(envid_t envid, unsigned pn)
 	// LAB 4: Your code here.
     uintptr_t addr = pn * PGSIZE;
     perm = PTE_P | PTE_U;
-    pde_t pde = vpd[PDX(addr)];
-    pte_t pte = vpt[PGNUM(addr)];
-    if (!(pde & PTE_P) || !(pte & PTE_P)) {
+    if (!(vpd[PDX(addr)] & PTE_P) || !(vpt[pn] & PTE_P)) {
         /* return silently */
         return 0;
     }
 
-    if ((pte & PTE_W) || (pte & PTE_COW) ) {
+    if ((vpt[pn] & PTE_W) || (vpt[pn] & PTE_COW) ) {
         perm |= PTE_COW;
     }
 
