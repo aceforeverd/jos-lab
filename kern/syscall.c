@@ -371,7 +371,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
     struct Env *e;
     int ret = 0;
-    if ((ret = envid2env(envid, &e, 1) ) < 0) {
+    if ((ret = envid2env(envid, &e, 0) ) < 0) {
         /* -E_BAD_ENV */
         return ret;
     }
