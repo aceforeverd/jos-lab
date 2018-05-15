@@ -181,7 +181,7 @@ sfork(void)
     for (addr = 0; addr < UTOP; addr += PGSIZE) {
         if (addr != UXSTACKTOP - PGSIZE && addr != USTACKTOP - PGSIZE) {
             if (has_entry(addr)) {
-                if ((r = sys_page_map(0, (void *)addr, child, (void *)addr, vpt[PGNUM(addr)])) < 0) {
+                if ((r = sys_page_map(0, (void *)addr, child, (void *)addr, vpt[PGNUM(addr)] & PTE_SYSCALL)) < 0) {
                     panic("sfork.sys_page_map at addr %08x: %e", addr, r);
                 }
             }
