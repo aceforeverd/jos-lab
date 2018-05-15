@@ -143,6 +143,7 @@ fork(void)
         }
     }
 
+    /* exception stack */
     if ((r = sys_page_alloc(child, (void *) (UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P )) < 0) {
         panic("exception stack allocation failed: %e", r);
     }
@@ -168,43 +169,42 @@ sfork(void)
 
     thisenv = NULL;
 
-    envid_t envid = sys_exofork();
-    if (envid < 0)
-        panic("sys_exofork: %e", envid);
-    if (envid == 0) {
+    envid_t child = sys_exofork();
+    if (child < 0)
+        panic("sys_exofork: %e", child);
+    if (child == 0) {
+        thisenv = envs + ENVX(sys_getenvid());
         return 0;
     }
 
     uintptr_t addr;
-    for (addr = 0; addr < UXSTACKTOP; addr += PGSIZE) {
+    for (addr = 0; addr < UTOP; addr += PGSIZE) {
         if (addr != UXSTACKTOP - PGSIZE && addr != USTACKTOP - PGSIZE) {
             if (has_entry(addr)) {
-                if ((r = sys_page_map(0, (void *)addr, envid, (void *)addr, vpt[PGNUM(addr)] & PTE_SYSCALL)) < 0) {
-                    panic("sys_page_map: %e", r);
+                if ((r = sys_page_map(0, (void *)addr, child, (void *)addr, vpt[PGNUM(addr)])) < 0) {
+                    panic("sfork.sys_page_map at addr %08x: %e", addr, r);
                 }
             }
         }
     }
 
-    r = sys_page_alloc(envid, (void *)(UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P);
-    if (r < 0) {
-        panic("fork: exception stack allocation failed!");
+    /* exception stack: standalone */
+    if ((r = sys_page_alloc(child, (void *)(UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P)) < 0) {
+        panic("sfork: exception stack allocation failed: %e", r);
     }
 
-    r = duppage(envid, USTACKTOP / PGSIZE - 1);
-    if (r < 0) {
-        panic("fork: failed to duppage");
+    /* user stack: copy on write */
+    if ((r = duppage(child, USTACKTOP / PGSIZE - 1)) < 0) {
+        panic("sfork: failed to duppage: %e", r);
     }
 
     extern void _pgfault_upcall(void);
-    r = sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
-    if (r < 0) {
-        panic("fork: set_pgfault_upcall failed!");
+    if ((r = sys_env_set_pgfault_upcall(child, _pgfault_upcall)) < 0) {
+        panic("sfork: set_pgfault_upcall: %e", r);
     }
 
-    if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
-        panic("sys_env_set_status: %e", r);
+    if ((r = sys_env_set_status(child, ENV_RUNNABLE)) < 0)
+        panic("sfork.sys_env_set_status: %e", r);
 
-    return envid;
-    return -E_INVAL;
+    return child;
 }
