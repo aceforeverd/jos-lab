@@ -148,6 +148,12 @@
 
 #include <inc/types.h>
 
+#define SEG_KCODE 1
+#define SEG_KDATA 2
+#define SEG_UCODE 3
+#define SEG_UDATA 4
+#define SEG_TSS 5
+
 // Segment Descriptors
 struct Segdesc {
 	unsigned sd_lim_15_0 : 16;  // Low bits of segment limit
@@ -179,6 +185,10 @@ struct Segdesc {
     (unsigned) (base) >> 24 }
 
 #endif /* !__ASSEMBLER__ */
+
+
+#define DPL_USER 0x3 // User DPL
+#define DPL_SUPER 0x0 // Super level/kernel
 
 // Application segment type bits
 #define STA_X		0x8	    // Executable segment
@@ -255,7 +265,7 @@ struct Taskstate {
 // Gate descriptors for interrupts and traps
 struct Gatedesc {
 	unsigned gd_off_15_0 : 16;   // low 16 bits of offset in segment
-	unsigned gd_sel : 16;        // segment selector
+	unsigned gd_ss : 16;         // segment selector
 	unsigned gd_args : 5;        // # args, 0 for interrupt/trap gates
 	unsigned gd_rsv1 : 3;        // reserved(should be zero I guess)
 	unsigned gd_type : 4;        // type(STS_{TG,IG32,TG32})
@@ -282,7 +292,7 @@ struct Gatedesc {
 #define SETGATE(gate, istrap, sel, off, dpl)			\
 {								\
 	(gate).gd_off_15_0 = (uint32_t) (off) & 0xffff;		\
-	(gate).gd_sel = (sel);					\
+	(gate).gd_ss = (sel);					\
 	(gate).gd_args = 0;					\
 	(gate).gd_rsv1 = 0;					\
 	(gate).gd_type = (istrap) ? STS_TG32 : STS_IG32;	\
@@ -293,10 +303,10 @@ struct Gatedesc {
 }
 
 // Set up a call gate descriptor.
-#define SETCALLGATE(gate, sel, off, dpl)           	        \
+#define SETCALLGATE(gate, ss, off, dpl)           	        \
 {								\
 	(gate).gd_off_15_0 = (uint32_t) (off) & 0xffff;		\
-	(gate).gd_sel = (sel);					\
+	(gate).gd_ss = (ss);					\
 	(gate).gd_args = 0;					\
 	(gate).gd_rsv1 = 0;					\
 	(gate).gd_type = STS_CG32;				\
