@@ -553,7 +553,6 @@ user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 	}
 }
 
-
 // --------------------------------------------------------------
 // Checking functions.
 // --------------------------------------------------------------
@@ -565,7 +564,7 @@ static void
 check_page_free_list(bool only_low_memory)
 {
 	struct Page *pp;
-	int pdx_limit = only_low_memory ? 1 : NPDENTRIES;
+	unsigned pdx_limit = only_low_memory ? 1 : NPDENTRIES;
 	int nfree_basemem = 0, nfree_extmem = 0;
 	char *first_free_page;
 
