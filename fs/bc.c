@@ -50,8 +50,8 @@ bc_pgfault(struct UTrapframe *utf)
 	//
 	// LAB 5: Your code here
     addr = ROUNDDOWN(addr, PGSIZE);
-    struct Page *p = sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U);
-    if (!p) {
+    r = sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U);
+    if (r < 0) {
         panic("failed to alloc a page");
     }
     r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
