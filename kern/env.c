@@ -321,7 +321,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 // Pages should be writable by user and kernel.
 // Panic if any allocation attempt fails.
 //
-static void
+void
 region_alloc(struct Env *e, void *va, size_t len)
 {
 	// LAB 3: Your code here.
@@ -456,7 +456,7 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
 	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
 	// LAB 5: Your code here.
     if (type == ENV_TYPE_FS) {
-        e->env_tf->tf_eflags |= FL_IOPL_MASK;
+        e->env_tf.tf_eflags |= FL_IOPL_MASK;
     }
 }
 
