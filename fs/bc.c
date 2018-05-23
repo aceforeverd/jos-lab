@@ -49,7 +49,19 @@ bc_pgfault(struct UTrapframe *utf)
 	// the page dirty).
 	//
 	// LAB 5: Your code here
-	panic("bc_pgfault not implemented");
+    addr = ROUNDDOWN(addr, PGSIZE);
+    struct Page *p = sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U);
+    if (!p) {
+        panic("failed to alloc a page");
+    }
+    r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
+    if (r != 0) {
+        panic("ide_read failed: %d", r);
+    }
+    r = sys_page_map(0, addr, 0, addr, (PTE_P | PTE_W | PTE_U) & (~PTE_D));
+    if (r < 0) {
+        panic("failed to set page non-dirty: %e", r);
+    }
 
 	// Check that the block we read was allocated. (exercise for
 	// the reader: why do we do this *after* reading the block
