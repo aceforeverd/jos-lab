@@ -86,7 +86,25 @@ flush_block(void *addr)
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
-	panic("flush_block not implemented");
+    int r;
+    addr = ROUNDDOWN(addr, PGSIZE);
+
+    if (!va_is_mapped(addr)) {
+        panic("addr %08x is not mapped", (uint32_t) addr);
+    }
+
+    if (!va_is_dirty(addr)) {
+        /* no need to write */
+        return;
+    }
+
+    if ((r = ide_write(blockno * BLKSECTS, addr, BLKSECTS)) != 0) {
+        panic("ide write failed");
+    }
+
+    if ((r = sys_page_map(0, addr, 0, addr, PTE_SYSCALL & (~PTE_D))) < 0) {
+        panic("failed to clear dirty bit: %e", r);
+    }
 }
 
 // Test that the block cache works, by smashing the superblock and
