@@ -228,10 +228,10 @@ serve_read(envid_t envid, union Fsipc *ipc)
     }
     of->o_fd->fd_offset += cnt;
     memmove(ret->ret_buf, buf, cnt);
-    return count;
+    return cnt;
 }
 
-// Write req->req_n bytes from req->req_buf to req_fileid, starting at
+// Write Traversereq->req_n bytes from req->req_buf to req_fileid, starting at
 // the current seek position, and update the seek position
 // accordingly.  Extend the file if necessary.  Returns the number of
 // bytes written, or < 0 on error.
@@ -243,6 +243,7 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 
 	// LAB 5: Your code here.
     struct OpenFile *of;
+    int r;
     if ((r = openfile_lookup(envid, req->req_fileid, &of)) < 0) {
         return r;
     }
