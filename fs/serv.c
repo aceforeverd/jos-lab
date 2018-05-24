@@ -227,7 +227,7 @@ serve_read(envid_t envid, union Fsipc *ipc)
         return cnt;
     }
     of->o_fd->fd_offset += cnt;
-    memmove(ret->ret_buf, buf, cnt);
+    memmove(ret->ret_buf, buf, PGSIZE);
     return cnt;
 }
 

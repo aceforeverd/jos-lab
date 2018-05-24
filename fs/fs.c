@@ -151,11 +151,22 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
         panic("ppdiskbno is null");
     }
 
-    if (filebno >= NDIRECT + NINDIRECT) {
+    off_t size = f->f_size;
+    int n_blks = ROUNDUP(size, BLKSIZE) / BLKSIZE;
+
+    if (filebno >= NDIRECT + NINDIRECT || filebno >= n_blks) {
         return -E_INVAL;
     }
 
     if (filebno < NDIRECT) {
+        for (i = 0; i <= filebno; i++) {
+            if (f->f_direct[i] == 0) {
+                if ((r = alloc_block()) < 0) {
+                    return r;
+                }
+                f->f_direct[i] = r;
+            }
+        }
         *ppdiskbno = &(f->f_direct[filebno]);
         return 0;
     }
@@ -174,6 +185,15 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 
     uint32_t *indirect_array;
     indirect_array = (uint32_t *) diskaddr(f->f_indirect);
+    for (i = 0; i <= filebno - NDIRECT; i++) {
+        if (indirect_array[i] == 0) {
+            if ((r = alloc_block()) < 0) {
+                return r;
+            }
+            indirect_array[i] = r;
+        }
+    }
+    flush_block(indirect_array);
     *ppdiskbno = &indirect_array[filebno - NDIRECT];
 
     return 0;
@@ -198,13 +218,6 @@ file_get_block(struct File *f, uint32_t filebno, char **blk)
     r = file_block_walk(f, filebno, &ppdiskbno, 1);
     if (r < 0) {
         return r;
-    }
-    if (*ppdiskbno == 0) {
-        r = alloc_block();
-        if (r < 0) {
-            return r;
-        }
-        *ppdiskbno = r;
     }
     *blk = (char *) diskaddr(*ppdiskbno);
     return 0;
