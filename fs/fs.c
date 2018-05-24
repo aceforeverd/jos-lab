@@ -67,7 +67,7 @@ alloc_block(void)
     for (i = start; i < super->s_nblocks; i ++) {
         if (block_is_free(i)) {
             bitmap[i / 32] &= ~(1 << (i % 32));
-            flush_block(&bitmap[i / BLKBITSIZE]);
+            flush_block(&bitmap[i / 32]);
             return i;
         }
     }
@@ -141,6 +141,9 @@ static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
 	// LAB 5: Your code here.
+    int i;
+    int r;
+
     if (!f) {
         panic("struct File f is null");
     }
@@ -153,6 +156,12 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
     }
 
     if (filebno < NDIRECT) {
+        if (f->f_direct[filebno] == 0) {
+            if ((r = alloc_block()) < 0) {
+                return r;
+            }
+            f->f_direct[filebno] = r;
+        }
         *ppdiskbno = &(f->f_direct[filebno]);
         return 0;
     }
@@ -162,7 +171,7 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
             return -E_NOT_FOUND;
         }
 
-        int r = alloc_block();
+        r = alloc_block();
         if (r < 0) {
             return r;
         }
@@ -171,6 +180,13 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 
     uint32_t *indirect_array;
     indirect_array = (uint32_t *) diskaddr(f->f_indirect);
+    if (indirect_array[filebno - NDIRECT] == 0) {
+        if ((r = alloc_block()) < 0) {
+            return r;
+        }
+        indirect_array[filebno - NDIRECT] = r;
+        flush_block(indirect_array);
+    }
     *ppdiskbno = &indirect_array[filebno - NDIRECT];
 
     return 0;
@@ -197,6 +213,7 @@ file_get_block(struct File *f, uint32_t filebno, char **blk)
         return r;
     }
     *blk = (char *) diskaddr(*ppdiskbno);
+    return 0;
 }
 
 // Try to find a file named "name" in dir.  If so, set *file to it.
