@@ -62,14 +62,34 @@ open(const char *path, int mode)
 	// FSREQ_OPEN returns 0 on success, < 0 on failure.
 	//
 	// (fd_alloc does not allocate a page, it just returns an
-	// unused fd address.  Do you need to allocate a page?)
+	// unused fd address.  Do you need to allocate a page?
+    //     nop, it was did in serve_open:openfile_alloc)
 	//
 	// Return the file descriptor index.
 	// If any step after fd_alloc fails, use fd_close to free the
 	// file descriptor.
 
 	// LAB 5: Your code here.
-	panic("open not implemented");
+    if (strlen(path) >= MAXPATHLEN) {
+        return -E_BAD_PATH;
+    }
+
+    struct Fd *fd;
+    int r;
+    if ((r = fd_alloc(&fd)) < 0) {
+        /* -E_MAX_FD */
+        return r;
+    }
+
+    fsipcbuf.open.req_omode = mode;
+    strncpy(fsipcbuf.open.req_path, path, strlen(path));
+    r = fsipc(FSREQ_OPEN, (void *) fd);
+    if (r < 0) {
+        fd_close(fd, 0);
+        return r;
+    }
+
+    return fd2num(fd);
 }
 
 // Flush the file descriptor.  After this the fileid is invalid.

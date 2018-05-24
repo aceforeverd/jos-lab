@@ -105,7 +105,7 @@ i386_init(void)
 	ENV_CREATE(TEST, ENV_TYPE_USER);
 #else
 	// Touch all you want.
-	ENV_CREATE(user_pingpong, ENV_TYPE_USER);
+	ENV_CREATE(user_testfile, ENV_TYPE_USER);
 	// ENV_CREATE(user_writemotd, ENV_TYPE_USER);
 	// ENV_CREATE(user_testfile, ENV_TYPE_USER);
 	// ENV_CREATE(user_icode, ENV_TYPE_USER);
