@@ -405,7 +405,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
         }
 
         pte_t *pte;
-        struct Page *p = page_lookup(e->env_pgdir, srcva, &pte);
+        struct Page *p = page_lookup(curenv->env_pgdir, srcva, &pte);
         if (!p) {
             return -E_INVAL;
         }
