@@ -221,13 +221,12 @@ serve_read(envid_t envid, union Fsipc *ipc)
         return r;
     }
 
-    char buf[PGSIZE];
-    int cnt = file_read(of->o_file, buf, MIN(req->req_n, PGSIZE), of->o_fd->fd_offset);
+    int size = MIN(req->req_n, PGSIZE);
+    int cnt = file_read(of->o_file, ret->ret_buf, size, of->o_fd->fd_offset);
     if (cnt < 0) {
         return cnt;
     }
     of->o_fd->fd_offset += cnt;
-    memmove(ret->ret_buf, buf, PGSIZE);
     return cnt;
 }
 
