@@ -181,7 +181,7 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
     tf->tf_ss = GD_UD | 3;
     tf->tf_cs = GD_UT | 3;
     tf->tf_eflags |= FL_IF;
-    e->env_tf = tf;
+    e->env_tf = *tf;
     return 0;
 }
 
@@ -517,7 +517,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
             return sys_env_set_status(a1, a2);
 
         case SYS_env_set_trapframe:
-
+            return sys_env_set_trapframe(a1, (struct Trapframe *a2));
 
         case SYS_env_set_pgfault_upcall:
             return sys_env_set_pgfault_upcall(a1, (void *) a2);
