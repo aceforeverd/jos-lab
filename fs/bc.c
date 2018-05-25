@@ -90,7 +90,7 @@ flush_block(void *addr)
     addr = ROUNDDOWN(addr, PGSIZE);
 
     if (!va_is_mapped(addr)) {
-        panic("addr %08x is not mapped", (uint32_t) addr);
+        return;
     }
 
     if (!va_is_dirty(addr)) {
