@@ -82,7 +82,7 @@ open(const char *path, int mode)
     }
 
     fsipcbuf.open.req_omode = mode;
-    strncpy(fsipcbuf.open.req_path, path, strlen(path));
+    strcpy(fsipcbuf.open.req_path, path);
     r = fsipc(FSREQ_OPEN, (void *) fd);
     if (r < 0) {
         fd_close(fd, 0);
@@ -127,7 +127,7 @@ devfile_read(struct Fd *fd, void *buf, size_t n)
         return r;
     }
 
-    strncpy(buf, fsipcbuf.readRet.ret_buf, PGSIZE);
+    memmove(buf, fsipcbuf.readRet.ret_buf, r);
     return r;
 }
 
@@ -145,8 +145,8 @@ devfile_write(struct Fd *fd, const void *buf, size_t n)
 	// bytes than requested.
 	// LAB 5: Your code here
     fsipcbuf.write.req_fileid = fd->fd_file.id;
-    fsipcbuf.write.req_n = n;
-    strncpy(fsipcbuf.write.req_buf, buf, n);
+    fsipcbuf.write.req_n = MIN(n, PGSIZE - sizeof(int) - sizeof(size_t));
+    memmove(fsipcbuf.write.req_buf, buf, fsipcbuf.write.req_n);
     return fsipc(FSREQ_WRITE, NULL);
 }
 
