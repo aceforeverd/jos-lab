@@ -94,13 +94,13 @@ void evict_bc() {
         }
 
 
-        if (!va_is_accessed(va)) {
+        if (!va_is_accessed(addr)) {
             if (va_is_dirty(addr)) {
                 flush_block(addr);
                 continue;
             }
 
-            if ((r = sys_page_unmap(0, va)) < 0) {
+            if ((r = sys_page_unmap(0, addr)) < 0) {
                 panic("sys_page_unmap: %e", r);
             }
             if (bc_num > 0) {
