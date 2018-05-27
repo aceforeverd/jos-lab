@@ -1,6 +1,10 @@
 
 #include "fs.h"
 
+#define BC_MAX (1<<16)
+
+static size_t bc_num = 0;
+
 // Return the virtual address of this disk block.
 void*
 diskaddr(uint32_t blockno)
@@ -24,6 +28,11 @@ va_is_dirty(void *va)
 	return (vpt[PGNUM(va)] & PTE_D) != 0;
 }
 
+bool
+va_is_accessed(void *va) {
+    return va_is_mapped(va) && (vpt[PGNUM(va)] & PTE_A);
+}
+
 // Fault any disk block that is read or written in to memory by
 // loading it from disk.
 // Hint: Use ide_read and BLKSECTS.
@@ -38,6 +47,7 @@ bc_pgfault(struct UTrapframe *utf)
 	if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
 		panic("page fault in FS: eip %08x, va %08x, err %04x",
 		      utf->utf_eip, addr, utf->utf_err);
+
 
 	// Sanity check the block number.
 	if (super && blockno >= super->s_nblocks)
@@ -63,11 +73,41 @@ bc_pgfault(struct UTrapframe *utf)
         panic("failed to set page non-dirty: %e", r);
     }
 
+    bc_num ++;
+    if (bc_num >= BC_MAX) {
+        evict_bc();
+    }
+
 	// Check that the block we read was allocated. (exercise for
 	// the reader: why do we do this *after* reading the block
 	// in?)
 	if (bitmap && block_is_free(blockno))
 		panic("reading free block %08x\n", blockno);
+}
+
+
+void evict_bc() {
+    int r;
+    for (uint32_t addr = DISKMAP; addr < DISKMAP + DISKSIZE; addr += PGSIZE) {
+        if (!va_is_mapped(addr)) {
+            continue;
+        }
+
+
+        if (!va_is_accessed(va)) {
+            if (va_is_dirty(addr)) {
+                flush_block(addr);
+                continue;
+            }
+
+            if ((r = sys_page_unmap(0, va)) < 0) {
+                panic("sys_page_unmap: %e", r);
+            }
+            if (bc_num > 0) {
+                bc_num --;
+            }
+        }
+    }
 }
 
 // Flush the contents of the block containing VA out to disk if
