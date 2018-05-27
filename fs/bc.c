@@ -88,7 +88,8 @@ bc_pgfault(struct UTrapframe *utf)
 
 void evict_bc() {
     int r;
-    for (uint32_t addr = DISKMAP; addr < DISKMAP + DISKSIZE; addr += PGSIZE) {
+    for (uint32_t va = DISKMAP; va < DISKMAP + DISKSIZE; va += PGSIZE) {
+        void *addr = (void *) va;
         if (!va_is_mapped(addr)) {
             continue;
         }
