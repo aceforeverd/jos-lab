@@ -30,6 +30,24 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
+    envid_t current_id = 0;
+    if (curenv) {
+        current_id = ENVX(curenv->env_id);
+    }
+    for (i = current_id + 1; i < current_id + NENV; i++) {
+        envid_t index = i % NENV ;
+        if (envs[index].env_status == ENV_RUNNABLE && envs[index].env_type != ENV_TYPE_IDLE) {
+            /* switch to this env */
+            env_run(envs + index);
+            return;
+        }
+    }
+    /* no other envs runnable */
+    if (envs[current_id].env_status == ENV_RUNNING && envs[current_id].env_type != ENV_TYPE_IDLE) {
+        env_run(&envs[current_id]);
+        return;
+    }
+
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
 	// drop into the kernel monitor.

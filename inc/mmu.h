@@ -148,6 +148,12 @@
 
 #include <inc/types.h>
 
+#define SEG_KCODE 1
+#define SEG_KDATA 2
+#define SEG_UCODE 3
+#define SEG_UDATA 4
+#define SEG_TSS 5
+
 // Segment Descriptors
 struct Segdesc {
 	unsigned sd_lim_15_0 : 16;  // Low bits of segment limit
@@ -179,6 +185,10 @@ struct Segdesc {
     (unsigned) (base) >> 24 }
 
 #endif /* !__ASSEMBLER__ */
+
+
+#define DPL_USER 0x3 // User DPL
+#define DPL_SUPER 0x0 // Super level/kernel
 
 // Application segment type bits
 #define STA_X		0x8	    // Executable segment

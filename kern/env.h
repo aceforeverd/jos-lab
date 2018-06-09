@@ -10,6 +10,8 @@ extern struct Env *envs;		// All environments
 #define curenv (thiscpu->cpu_env)		// Current environment
 extern struct Segdesc gdt[];
 
+void envs_dump();
+
 void	env_init(void);
 void	env_init_percpu(void);
 int	env_alloc(struct Env **e, envid_t parent_id);
@@ -22,6 +24,7 @@ int	envid2env(envid_t envid, struct Env **env_store, bool checkperm);
 void	env_run(struct Env *e) __attribute__((noreturn));
 void	env_pop_tf(struct Trapframe *tf) __attribute__((noreturn));
 
+void region_alloc(struct Env *e, void *va, size_t len);
 // Without this extra macro, we couldn't pass macros like TEST to
 // ENV_CREATE because of the C pre-processor's argument prescan rule.
 #define ENV_PASTE3(x, y, z) x ## y ## z

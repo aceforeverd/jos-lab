@@ -35,7 +35,8 @@ enum {
 	ENV_DYING,
 	ENV_RUNNABLE,
 	ENV_RUNNING,
-	ENV_NOT_RUNNABLE
+	ENV_NOT_RUNNABLE,
+    ENV_INVALID,
 };
 
 // Special environment types
@@ -55,6 +56,7 @@ struct Env {
 	unsigned env_status;		// Status of the environment
 	uint32_t env_runs;		// Number of times environment has run
 	int env_cpunum;			// The CPU that the env is running on
+    uintptr_t env_break;
 
 	// Address space
 	pde_t *env_pgdir;		// Kernel virtual address of page dir

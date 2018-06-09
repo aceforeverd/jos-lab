@@ -1,6 +1,10 @@
 
 #include "fs.h"
 
+#define BC_MAX (1<<16)
+
+static size_t bc_num = 0;
+
 // Return the virtual address of this disk block.
 void*
 diskaddr(uint32_t blockno)
@@ -22,6 +26,11 @@ bool
 va_is_dirty(void *va)
 {
 	return (vpt[PGNUM(va)] & PTE_D) != 0;
+}
+
+bool
+va_is_accessed(void *va) {
+    return va_is_mapped(va) && (vpt[PGNUM(va)] & PTE_A);
 }
 
 // Fault any disk block that is read or written in to memory by
@@ -49,13 +58,56 @@ bc_pgfault(struct UTrapframe *utf)
 	// the page dirty).
 	//
 	// LAB 5: Your code here
-	panic("bc_pgfault not implemented");
+    addr = ROUNDDOWN(addr, PGSIZE);
+    r = sys_page_alloc(0, addr, PTE_P | PTE_W | PTE_U);
+    if (r < 0) {
+        panic("failed to alloc a page");
+    }
+    r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
+    if (r != 0) {
+        panic("ide_read failed: %d", r);
+    }
+    r = sys_page_map(0, addr, 0, addr, (PTE_P | PTE_W | PTE_U) & (~PTE_D));
+    if (r < 0) {
+        panic("failed to set page non-dirty: %e", r);
+    }
+
+    bc_num ++;
+    if (bc_num >= BC_MAX) {
+        evict_bc();
+    }
 
 	// Check that the block we read was allocated. (exercise for
 	// the reader: why do we do this *after* reading the block
 	// in?)
 	if (bitmap && block_is_free(blockno))
 		panic("reading free block %08x\n", blockno);
+}
+
+
+void evict_bc() {
+    int r;
+    for (uint32_t va = DISKMAP; va < DISKMAP + DISKSIZE; va += PGSIZE) {
+        void *addr = (void *) va;
+        if (!va_is_mapped(addr)) {
+            continue;
+        }
+
+
+        if (!va_is_accessed(addr)) {
+            if (va_is_dirty(addr)) {
+                flush_block(addr);
+                continue;
+            }
+
+            if ((r = sys_page_unmap(0, addr)) < 0) {
+                panic("sys_page_unmap: %e", r);
+            }
+            if (bc_num > 0) {
+                bc_num --;
+            }
+        }
+    }
 }
 
 // Flush the contents of the block containing VA out to disk if
@@ -74,7 +126,25 @@ flush_block(void *addr)
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
-	panic("flush_block not implemented");
+    int r;
+    addr = ROUNDDOWN(addr, PGSIZE);
+
+    if (!va_is_mapped(addr)) {
+        return;
+    }
+
+    if (!va_is_dirty(addr)) {
+        /* no need to write */
+        return;
+    }
+
+    if ((r = ide_write(blockno * BLKSECTS, addr, BLKSECTS)) != 0) {
+        panic("ide write failed");
+    }
+
+    if ((r = sys_page_map(0, addr, 0, addr, PTE_SYSCALL & (~PTE_D))) < 0) {
+        panic("failed to clear dirty bit: %e", r);
+    }
 }
 
 // Test that the block cache works, by smashing the superblock and

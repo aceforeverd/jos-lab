@@ -47,19 +47,129 @@
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+ TRAPHANDLER_NOEC(handler0, T_DIVIDE)
+ TRAPHANDLER_NOEC(handler1, T_DEBUG)
+ TRAPHANDLER_NOEC(handler2, T_NMI)
+ TRAPHANDLER_NOEC(handler3, T_BRKPT)
+ TRAPHANDLER_NOEC(handler4, T_OFLOW)
+ TRAPHANDLER_NOEC(handler5, T_BOUND)
+ TRAPHANDLER_NOEC(handler6, T_ILLOP)
+ TRAPHANDLER_NOEC(handler7, T_DEVICE)
 
+ TRAPHANDLER(handler8, T_DBLFLT)
+ TRAPHANDLER(handler9, 9) // not used
+ TRAPHANDLER(handler10, T_TSS)
+ TRAPHANDLER(handler11, T_SEGNP)
+ TRAPHANDLER(handler12, T_STACK)
+ TRAPHANDLER(handler13, T_GPFLT)
+ TRAPHANDLER(handler14, T_PGFLT)
+ TRAPHANDLER(handler15, 15) // not used
+
+ TRAPHANDLER_NOEC(handler16, T_FPERR)
+ TRAPHANDLER_NOEC(handler17, T_ALIGN)
+ TRAPHANDLER_NOEC(handler18, T_MCHK)
+ TRAPHANDLER_NOEC(handler19, T_SIMDERR)
+ TRAPHANDLER_NOEC(syscall_handler, T_SYSCALL)
+
+ TRAPHANDLER_NOEC(irq_handler0, IRQ_OFFSET)
+ TRAPHANDLER_NOEC(irq_handler1, IRQ_OFFSET + 1)
+ TRAPHANDLER_NOEC(irq_handler2, IRQ_OFFSET + 2)
+ TRAPHANDLER_NOEC(irq_handler3, IRQ_OFFSET + 3)
+ TRAPHANDLER_NOEC(irq_handler4, IRQ_OFFSET + 4)
+ TRAPHANDLER_NOEC(irq_handler5, IRQ_OFFSET + 5)
+ TRAPHANDLER_NOEC(irq_handler6, IRQ_OFFSET + 6)
+ TRAPHANDLER_NOEC(irq_handler7, IRQ_OFFSET + 7)
+ TRAPHANDLER_NOEC(irq_handler8, IRQ_OFFSET + 8)
+ TRAPHANDLER_NOEC(irq_handler9, IRQ_OFFSET + 9)
+ TRAPHANDLER_NOEC(irq_handler10, IRQ_OFFSET + 10)
+ TRAPHANDLER_NOEC(irq_handler11, IRQ_OFFSET + 11)
+ TRAPHANDLER_NOEC(irq_handler12, IRQ_OFFSET + 12)
+ TRAPHANDLER_NOEC(irq_handler13, IRQ_OFFSET + 13)
+ TRAPHANDLER_NOEC(irq_handler14, IRQ_OFFSET + 14)
+ TRAPHANDLER_NOEC(irq_handler15, IRQ_OFFSET + 15)
 
 
 .globl sysenter_handler;
 .type sysenter_handler, @function;
 .align 2;
 sysenter_handler:
-/*
- * Lab 3: Your code here for system call handling
- */
+pushl $GD_UD|3
+pushl %ebp
+pushfl
+pushl $GD_UT|3
+pushl %esi
+pushl $0
+pushl $T_SYSCALL
+pushl %ds
+pushl %es
+pushal
+pushl %esp
+call syscall_tf
+ movl %ebp, %ecx
+ movl %esi, %edx
+ sti
+ sysexit
 
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+ .globl _alltraps
+ _alltraps:
+ 	# trap frame
+ 	pushl %ds
+	pushl %es
+	pushal
 
+	movw $(GD_KD), %ax
+	movw %ax, %ds
+	movw %ax, %es
+
+	pushl %esp
+	call trap
+
+
+ .data
+ .global vectors
+ vectors:
+ 	.long handler0
+	.long handler1
+	.long handler2
+	.long handler3
+	.long handler4
+	.long handler5
+	.long handler6
+	.long handler7
+	.long handler8
+	.long handler9
+	.long handler10
+	.long handler11
+	.long handler12
+	.long handler13
+	.long handler14
+	.long handler15
+	.long handler16
+	.long handler17
+	.long handler18
+	.long handler19
+
+
+.data
+.global irq_handlers
+irq_handlers:
+    .long irq_handler0
+    .long irq_handler1
+    .long irq_handler2
+    .long irq_handler3
+    .long irq_handler4
+    .long irq_handler5
+    .long irq_handler6
+    .long irq_handler7
+    .long irq_handler8
+    .long irq_handler9
+    .long irq_handler10
+    .long irq_handler11
+    .long irq_handler12
+    .long irq_handler13
+    .long irq_handler14
+    .long irq_handler15
