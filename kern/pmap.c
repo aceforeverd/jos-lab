@@ -82,7 +82,7 @@ static physaddr_t check_va2pa_large(pde_t *pgdir, uintptr_t va);
 static void check_page(void);
 static int check_continuous(struct Page *pp, int num_page);
 static void check_page_installed_pgdir(void);
-static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
+/* static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm); */
 static void boot_map_region_large(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
 
 // This simple physical memory allocator is used only while JOS is setting
@@ -229,7 +229,9 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
     boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
-    invalid_page(kern_pgdir, KSTACKTOP - KSTKSIZE - KSTKGAP, KSTKGAP);
+    /* used by netwrok driver */
+    /* boot_map_region(kern_pgdir, E1000_START, E1000_SIZE, , PTE_PCD | PTE_PWT); */
+    /* invalid_page(kern_pgdir, KSTACKTOP - KSTKSIZE - KSTKGAP, KSTKGAP); */
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -371,13 +373,9 @@ page_init(void)
     }
 
     for (; i < npages; i++) {
-        /* if (i * PGSIZE >= KERNBASE) { */
-        /*     pages[i].pp_ref = 1; */
-        /* } else { */
             pages[i].pp_ref = 0;
             pages[i].pp_link = page_free_list;
             page_free_list = &pages[i];
-        /* } */
     }
 
 	chunk_list = NULL;
@@ -521,7 +519,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 // mapped pages.
 //
 // Hint: the TA solution uses pgdir_walk
-static void
+void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     pte_t *entry;
